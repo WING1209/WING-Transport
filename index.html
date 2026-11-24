@@ -1,673 +1,1277 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>配送ルート・稼働時間シミュレーター（デモ機）</title>
-  <!-- Excel / CSV 解析用ライブラリ (SheetJS) -->
-  <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-  <!-- 地図表示用ライブラリ (Leaflet - APIキー不要) -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <style>
-    :root {
-      --bg: #0f172a;
-      --panel: #1e293b;
-      --panel-light: #334155;
-      --border: #475569;
-      --text: #f8fafc;
-      --muted: #94a3b8;
-      --primary: #3b82f6;
-      --primary-hover: #2563eb;
-      --accent: #10b981;
-      --warn: #f59e0b;
-      --danger: #ef4444;
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>配送ルート・稼働時間シミュレーター</title>
+<!-- Excel / CSV 解析用ライブラリ (SheetJS) -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+<!-- 地図表示用ライブラリ (Leaflet - 地図タイル表示用 / ルート計算はRoutes APIを使用) -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root {
+    --bg: #0f172a;
+    --panel: #1e293b;
+    --panel-light: #334155;
+    --border: #475569;
+    --text: #f8fafc;
+    --muted: #94a3b8;
+    --primary: #3b82f6;
+    --primary-hover: #2563eb;
+    --accent: #10b981;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Meiryo", "Hiragino Kaku Gothic ProN", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+  }
+  header {
+    background: #020617;
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  header h1 {
+    margin: 0;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .badge {
+    font-size: 0.75rem;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: var(--warn);
+    color: #000;
+    font-weight: bold;
+  }
+  .badge-quota {
+    font-size: 0.75rem;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: var(--panel-light);
+    color: #e2e8f0;
+    border: 1px solid var(--border);
+  }
+  .container {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 20px;
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 20px;
+  }
+  @media (max-width: 1024px) {
+    .container { grid-template-columns: 1fr; }
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+    margin-bottom: 18px;
+  }
+  .card h2 {
+    margin: 0 0 14px 0;
+    font-size: 1.05rem;
+    border-left: 4px solid var(--primary);
+    padding-left: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+  }
+  @media (max-width: 640px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  }
+  label {
+    display: block;
+    font-size: 0.82rem;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  input[type="text"], input[type="date"], input[type="time"],
+  input[type="number"], select {
+    width: 100%;
+    padding: 9px 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 0.92rem;
+  }
+  input:focus, select:focus {
+    outline: none;
+    border-color: var(--primary);
+  }
+  .btn {
+    padding: 9px 14px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.88rem;
+    font-weight: bold;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: 0.15s;
+  }
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
+  .btn-accent { background: var(--accent); color: #022c22; }
+  .btn-accent:hover:not(:disabled) { filter: brightness(1.1); }
+  .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .btn-outline:hover:not(:disabled) { background: var(--panel-light); }
+  .btn-danger { background: rgba(239, 68, 68, 0.2); border: 1px solid var(--danger); color: #fca5a5; padding: 5px 9px; font-size: 0.8rem; }
+  .btn-sm { padding: 5px 10px; font-size: 0.8rem; }
+
+  /* 地点リストと高速チェック区間 */
+  .stop-item {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    position: relative;
+  }
+  .stop-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .stop-badge {
+    background: var(--primary);
+    color: #fff;
+    font-size: 0.78rem;
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 12px;
+  }
+  .stop-badge.start { background: var(--accent); color: #022c22; }
+  .stop-badge.end { background: var(--warn); color: #000; }
+  .stop-fields {
+    display: grid;
+    grid-template-columns: 1fr 1.6fr 95px;
+    gap: 8px;
+  }
+  @media (max-width: 640px) {
+    .stop-fields { grid-template-columns: 1fr; }
+  }
+  .segment-connector {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 0;
+    position: relative;
+  }
+  .segment-connector::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--border);
+    z-index: 0;
+  }
+  .highway-pill {
+    position: relative;
+    z-index: 1;
+    background: var(--panel-light);
+    border: 1px solid var(--border);
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 0.84rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .highway-pill.active {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: var(--accent);
+    color: #6ee7b7;
+  }
+  .highway-pill input {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
+  /* サマリー KPI */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .kpi-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .kpi-label { font-size: 0.78rem; color: var(--muted); }
+  .kpi-val { font-size: 1.3rem; font-weight: bold; margin-top: 2px; color: #fff; }
+  .kpi-val.accent { color: var(--accent); }
+  .kpi-val.warn { color: var(--warn); }
+
+  /* タイムラインテーブル */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+  th, td {
+    border-bottom: 1px solid var(--border);
+    padding: 9px 6px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th { color: var(--muted); font-weight: normal; }
+  .tag-etc {
+    display: inline-block;
+    background: rgba(59, 130, 246, 0.25);
+    border: 1px solid var(--primary);
+    color: #93c5fd;
+    font-size: 0.74rem;
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+  .tag-local {
+    display: inline-block;
+    background: rgba(148, 163, 184, 0.2);
+    color: var(--muted);
+    font-size: 0.74rem;
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+  #map {
+    height: 300px;
+    width: 100%;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    margin-bottom: 14px;
+    z-index: 1;
+  }
+  .api-bar {
+    background: rgba(59, 130, 246, 0.12);
+    border: 1px solid rgba(59, 130, 246, 0.4);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    font-size: 0.84rem;
+  }
+  .course-bar {
+    background: rgba(16, 185, 129, 0.08);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+  }
+  .flex-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  /* =========================================
+     印刷・PDF出力用スタイル (A4横 1枚収まり)
+     左：コース詳細・時刻表 / 右：全体ルート地図
+     ========================================= */
+  .print-only-header { display: none; }
+
+  @media print {
+    @page {
+      size: A4 landscape;
+      margin: 8mm;
     }
-    * { box-sizing: border-box; }
     body {
-      margin: 0;
-      font-family: "Meiryo", "Hiragino Kaku Gothic ProN", sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.5;
+      background: #ffffff !important;
+      color: #000000 !important;
+      font-size: 9pt;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
-    header {
-      background: #020617;
-      border-bottom: 1px solid var(--border);
-      padding: 14px 24px;
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-    header h1 {
-      margin: 0;
-      font-size: 1.2rem;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .badge {
-      font-size: 0.75rem;
-      padding: 3px 8px;
-      border-radius: 4px;
-      background: var(--warn);
-      color: #000;
-      font-weight: bold;
+    header, #leftInputColumn, .no-print {
+      display: none !important;
     }
     .container {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 20px;
-      display: grid;
-      grid-template-columns: 1.15fr 0.85fr;
-      gap: 20px;
+      display: block !important;
+      max-width: 100% !important;
+      padding: 0 !important;
+      margin: 0 !important;
     }
-    @media (max-width: 1024px) {
-      .container { grid-template-columns: 1fr; }
+    #rightResultColumn .card {
+      background: #ffffff !important;
+      border: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      box-shadow: none !important;
     }
-    .card {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 18px;
-      margin-bottom: 18px;
+    #rightResultColumn .card h2 {
+      display: none !important;
     }
-    .card h2 {
-      margin: 0 0 14px 0;
-      font-size: 1.05rem;
-      border-left: 4px solid var(--primary);
-      padding-left: 10px;
-      display: flex;
+    .print-only-header {
+      display: flex !important;
       justify-content: space-between;
-      align-items: center;
-    }
-    .grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-    .grid-3 {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 12px;
-    }
-    @media (max-width: 640px) {
-      .grid-2, .grid-3 { grid-template-columns: 1fr; }
-    }
-    label {
-      display: block;
-      font-size: 0.82rem;
-      color: var(--muted);
-      margin-bottom: 4px;
-    }
-    input[type="text"], input[type="date"], input[type="time"], input[type="number"], select {
-      width: 100%;
-      padding: 9px 10px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--text);
-      font-size: 0.92rem;
-    }
-    input:focus, select:focus {
-      outline: none;
-      border-color: var(--primary);
-    }
-    .btn {
-      padding: 9px 14px;
-      border: none;
-      border-radius: 6px;
-      font-size: 0.88rem;
-      font-weight: bold;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      transition: 0.15s;
-    }
-    .btn-primary { background: var(--primary); color: #fff; }
-    .btn-primary:hover { background: var(--primary-hover); }
-    .btn-accent { background: var(--accent); color: #022c22; }
-    .btn-accent:hover { filter: brightness(1.1); }
-    .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
-    .btn-outline:hover { background: var(--panel-light); }
-    .btn-danger { background: rgba(239, 68, 68, 0.2); border: 1px solid var(--danger); color: #fca5a5; padding: 5px 9px; font-size: 0.8rem; }
-    .btn-sm { padding: 5px 10px; font-size: 0.8rem; }
-
-    /* 地点リストと高速チェック区間 */
-    .stop-item {
-      background: rgba(15, 23, 42, 0.7);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px;
-      position: relative;
-    }
-    .stop-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      align-items: flex-end;
+      border-bottom: 2px solid #000;
+      padding-bottom: 4px;
       margin-bottom: 8px;
     }
-    .stop-badge {
-      background: var(--primary);
-      color: #fff;
-      font-size: 0.78rem;
-      font-weight: bold;
-      padding: 2px 8px;
-      border-radius: 12px;
+    .print-only-header h1 {
+      font-size: 14pt;
+      margin: 0;
+      color: #000;
     }
-    .stop-badge.start { background: var(--accent); color: #022c22; }
-    .stop-badge.end { background: var(--warn); color: #000; }
-    .stop-fields {
-      display: grid;
-      grid-template-columns: 1fr 1.6fr 95px;
-      gap: 8px;
+    .print-meta {
+      font-size: 9pt;
+      color: #333;
+      text-align: right;
     }
-    @media (max-width: 640px) {
-      .stop-fields { grid-template-columns: 1fr; }
+    /* 左右2カラムレイアウト（左：コース説明・タイムライン / 右：全体地図） */
+    .print-layout-wrapper {
+      display: grid !important;
+      grid-template-columns: 1.25fr 0.75fr;
+      gap: 12px;
+      align-items: start;
     }
-    .segment-connector {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 8px 0;
-      position: relative;
+    .print-left-details {
+      order: 1;
     }
-    .segment-connector::before {
-      content: "";
-      position: absolute;
-      left: 50%;
-      top: 0;
-      bottom: 0;
-      width: 2px;
-      background: var(--border);
-      z-index: 0;
-    }
-    .highway-pill {
-      position: relative;
-      z-index: 1;
-      background: var(--panel-light);
-      border: 1px solid var(--border);
-      padding: 5px 14px;
-      border-radius: 20px;
-      font-size: 0.84rem;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-      user-select: none;
-    }
-    .highway-pill.active {
-      background: rgba(16, 185, 129, 0.2);
-      border-color: var(--accent);
-      color: #6ee7b7;
-    }
-    .highway-pill input {
-      width: 16px;
-      height: 16px;
-      accent-color: var(--accent);
-      cursor: pointer;
-    }
-
-    /* サマリーKPI */
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
-      margin-bottom: 16px;
-    }
-    .kpi-box {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px;
-    }
-    .kpi-label { font-size: 0.78rem; color: var(--muted); }
-    .kpi-val { font-size: 1.35rem; font-weight: bold; margin-top: 2px; color: #fff; }
-    .kpi-val.accent { color: var(--accent); }
-    .kpi-val.warn { color: var(--warn); }
-
-    /* タイムラインテーブル */
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.85rem;
-    }
-    th, td {
-      border-bottom: 1px solid var(--border);
-      padding: 9px 6px;
-      text-align: left;
-      vertical-align: top;
-    }
-    th { color: var(--muted); font-weight: normal; }
-    .tag-etc {
-      display: inline-block;
-      background: rgba(59, 130, 246, 0.25);
-      border: 1px solid var(--primary);
-      color: #93c5fd;
-      font-size: 0.74rem;
-      padding: 1px 6px;
-      border-radius: 4px;
-    }
-    .tag-local {
-      display: inline-block;
-      background: rgba(148, 163, 184, 0.2);
-      color: var(--muted);
-      font-size: 0.74rem;
-      padding: 1px 6px;
-      border-radius: 4px;
+    .print-right-map {
+      order: 2;
     }
     #map {
-      height: 280px;
-      width: 100%;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      margin-bottom: 14px;
-      z-index: 1;
+      height: 155mm !important;
+      width: 100% !important;
+      border: 1px solid #666 !important;
+      margin-bottom: 0 !important;
     }
-    .api-bar {
-      background: rgba(59, 130, 246, 0.12);
-      border: 1px solid rgba(59, 130, 246, 0.4);
-      border-radius: 8px;
-      padding: 10px 14px;
-      margin-bottom: 16px;
-      font-size: 0.84rem;
+    .kpi-grid {
+      grid-template-columns: repeat(4, 1fr) !important;
+      gap: 6px !important;
+      margin-bottom: 8px !important;
     }
-    .flex-row {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      flex-wrap: wrap;
+    .kpi-box {
+      background: #f8fafc !important;
+      border: 1px solid #94a3b8 !important;
+      padding: 6px 8px !important;
     }
-  </style>
+    .kpi-label {
+      color: #475569 !important;
+      font-size: 7.5pt !important;
+    }
+    .kpi-val {
+      color: #000000 !important;
+      font-size: 11pt !important;
+    }
+    #highwaySummaryBox {
+      background: #f8fafc !important;
+      border: 1px solid #94a3b8 !important;
+      color: #000 !important;
+      padding: 6px 8px !important;
+      margin-bottom: 8px !important;
+      font-size: 8pt !important;
+    }
+    #highwaySummaryText {
+      color: #1e293b !important;
+    }
+    table {
+      font-size: 8pt !important;
+    }
+    th {
+      background: #e2e8f0 !important;
+      color: #000000 !important;
+      font-weight: bold !important;
+      border: 1px solid #94a3b8 !important;
+      padding: 4px 5px !important;
+    }
+    td {
+      border: 1px solid #cbd5e1 !important;
+      padding: 4px 5px !important;
+      color: #000000 !important;
+    }
+    .tag-etc {
+      background: #dbeafe !important;
+      border: 1px solid #2563eb !important;
+      color: #1e40af !important;
+    }
+    .tag-local {
+      background: #f1f5f9 !important;
+      border: 1px solid #94a3b8 !important;
+      color: #334155 !important;
+    }
+  }
+</style>
 </head>
 <body>
 
 <header>
-  <h1>🚚 配送ルート・稼働時間シミュレーター <span class="badge" id="modeBadge">デモシミュレーター稼働中（API不要）</span></h1>
+  <h1>
+    配送ルート・稼働時間シミュレーター
+    <span class="badge" id="modeBadge">デモシミュレーター稼働中</span>
+    <span class="badge-quota" id="quotaBadge">本日API利用: 0 / 100 回</span>
+  </h1>
   <div class="flex-row">
-    <button class="btn btn-outline btn-sm" onclick="downloadSampleCSV()">📥 サンプルCSV取得</button>
+    <button class="btn btn-outline btn-sm" onclick="downloadSampleCSV()">サンプルCSV取得</button>
     <label class="btn btn-outline btn-sm" style="margin:0; cursor:pointer;">
-      📂 CSV / Excel読込
-      <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" style="display:none;" onchange="handleFileUpload(event)" />
+      CSV / Excel読込
+      <input type="file" id="fileInput" accept=".csv, .xlsx, .xls" style="display:none;" onchange="handleFileUpload(event)" />
     </label>
   </div>
 </header>
 
 <div class="container">
-  <!-- 左カラム：条件入力 -->
-  <div>
-    <!-- API切替オプション（本番移行用） -->
+  <!-- 左カラム: 条件入力 -->
+  <div id="leftInputColumn">
+    <!-- API 切替オプション -->
     <div class="api-bar">
       <div class="flex-row" style="justify-content: space-between;">
-        <span><strong>動作モード：</strong> <span id="modeDesc">現在はデモ計算エンジン（主要拠点データ＋距離推定）で動作しています。</span></span>
-        <button class="btn btn-outline btn-sm" onclick="toggleApiBox()">⚙️ Google Maps APIキー設定</button>
+        <span><strong>動作モード:</strong> <span id="modeDesc">現在はデモ計算エンジンで動作しています。</span></span>
+        <button class="btn btn-outline btn-sm" onclick="toggleApiBox()">Google Maps API キー設定</button>
       </div>
-      <div id="apiKeyBox" style="display:none; margin-top:10px; padding-top:10px; border-top:1px solid var(--border);">
-        <label>Google Maps APIキー（ブラウザ内にのみ保存・GitHub公開時も安全）</label>
+      <div id="apiKeyBox" style="display: none; margin-top:10px; padding-top:10px; border-top: 1px solid var(--border);">
+        <label>Google Cloud APIキー (Routes API & Geocoding API 有効化済みのキー / ブラウザ内にのみ保存)</label>
         <div class="flex-row">
-          <input type="text" id="gmapsApiKey" placeholder="AIzaSy...（未入力ならデモモードで動作）" style="flex:1;" />
+          <input type="text" id="gmapsApiKey" placeholder="AIzaSy...(未入力ならデモモードで動作)" style="flex:1;" />
           <button class="btn btn-primary btn-sm" onclick="saveApiKey()">保存して適用</button>
           <button class="btn btn-outline btn-sm" onclick="clearApiKey()">解除</button>
+        </div>
+        <div style="font-size: 0.76rem; color: var(--muted); margin-top: 6px;">
+          ※1日のAPI呼び出し上限は安全のため <strong>100回</strong> に制限されています（日付が変わると自動リセットされます）。
         </div>
       </div>
     </div>
 
-    <!-- ⑤⑦⑥ 基本条件・詳細設定 -->
+    <!-- ① コース管理（保存・呼出・JSON書き出し/読み込み） -->
+    <div class="course-bar">
+      <div style="font-weight:bold; font-size:0.9rem; margin-bottom:8px; color:#6ee7b7;">
+        📁 コース保存・セーブデータ管理（コース名をキーに一括保存）
+      </div>
+      <div class="grid-2" style="margin-bottom:8px;">
+        <div>
+          <label>保存済みコースから読込</label>
+          <div class="flex-row">
+            <select id="savedCourseSelect" onchange="loadSelectedCourse()" style="flex:1;">
+              <option value="">-- 保存済みコースを選択 --</option>
+            </select>
+            <button class="btn btn-danger" onclick="deleteSelectedCourse()" title="選択中のコースを削除">削除</button>
+          </div>
+        </div>
+        <div>
+          <label>現在のコース名（保存キー）</label>
+          <div class="flex-row">
+            <input type="text" id="courseNameInput" placeholder="例: 埼玉〜東京・横浜定期便" style="flex:1;" />
+            <button class="btn btn-primary btn-sm" onclick="saveCurrentCourse()">コース保存</button>
+          </div>
+        </div>
+      </div>
+      <div class="flex-row" style="justify-content: flex-end; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
+        <span style="font-size:0.78rem; color:var(--muted); margin-right:auto;">全コースデータのバックアップ・共有:</span>
+        <button class="btn btn-outline btn-sm" onclick="exportCoursesJSON()">セーブデータ書き出し (.json)</button>
+        <label class="btn btn-outline btn-sm" style="margin:0; cursor:pointer;">
+          セーブデータ読込 (.json)
+          <input type="file" id="jsonImportInput" accept=".json" style="display:none;" onchange="importCoursesJSON(event)" />
+        </label>
+      </div>
+    </div>
+
+    <!-- 基本条件・詳細設定 -->
     <div class="card">
-      <h2>1. 運行日時・詳細設定（⑤⑥⑦）</h2>
+      <h2>1. 運行日時・詳細設定</h2>
       <div class="grid-3">
         <div>
-          <label>⑦ 運行日付</label>
+          <label>運行日付</label>
           <input type="date" id="runDate" />
         </div>
         <div>
-          <label>⑤ 最初の出発時間</label>
+          <label>最初の出発時間</label>
           <input type="time" id="startTime" value="08:00" />
         </div>
         <div>
-          <label>車両区分（高速料金目安）</label>
+          <label>車両区分 (高速料金目安)</label>
           <select id="vehicleType">
             <option value="1.0">普通車</option>
-            <option value="1.2" selected>中型車（4tトラック等）</option>
-            <option value="1.65">大型車（10tトラック等）</option>
+            <option value="1.2" selected>中型車 (4tトラック等)</option>
+            <option value="1.65">大型車 (10tトラック等)</option>
           </select>
         </div>
       </div>
-
       <div class="grid-2" style="margin-top:12px;">
         <div>
-          <label>④ 高速道路の使用ルール</label>
+          <label>高速道路の使用ルール</label>
           <select id="highwayMode" onchange="renderStops()">
-            <option value="auto">自動（最適：30km超または時間短縮大で自動使用）</option>
-            <option value="manual" selected>手動（各地点間のチェックボックスで指定）</option>
+            <option value="auto">自動 (最適: 22km以上の区間で自動使用)</option>
+            <option value="manual" selected>手動 (各地点間のチェックボックスで指定)</option>
           </select>
         </div>
         <div>
-          <label>⑥ 各地点での滞在時間設定</label>
+          <label>各地点での滞在時間設定</label>
           <div class="flex-row">
             <select id="stayMode" onchange="toggleStayMode()" style="flex:1;">
-              <option value="uniform">一律で指定（分）</option>
-              <option value="individual">各地点ごとに入力（分）</option>
+              <option value="uniform">一律で指定 (分)</option>
+              <option value="individual" selected>各地点ごとに入力 (分)</option>
             </select>
-            <input type="number" id="uniformStayMin" value="20" min="0" step="5" style="width:85px;" title="一律滞在時間（分）" />
+            <input type="number" id="uniformStayMin" value="20" min="0" step="5" style="width:85px;" disabled title="一律滞在時間(分)" />
           </div>
         </div>
       </div>
     </div>
 
-    <!-- ①②③ 地点リスト -->
+    <!-- 地点リスト -->
     <div class="card">
       <h2>
-        <span>2. 配送ルート地点設定（①②③）</span>
-        <button class="btn btn-outline btn-sm" onclick="addStop()">＋ 地点を追加</button>
+        <span>2. 配送ルート地点設定（出発 → 経由 → 到着）</span>
+        <button class="btn btn-outline btn-sm" onclick="addStop()">+ 地点を追加</button>
       </h2>
       <div id="stopsContainer"></div>
-
       <div style="margin-top:16px;">
-        <button class="btn btn-accent" style="width:100%; padding:13px; font-size:1rem;" onclick="runSimulation()">
-          🚀 最適ルート・稼働時間をシミュレーション計算する
+        <button class="btn btn-accent" id="calcBtn" style="width:100%; padding: 13px; font-size:1rem;" onclick="runSimulation()">
+          最適ルート・稼働時間をシミュレーション計算する
         </button>
       </div>
     </div>
   </div>
 
-  <!-- 右カラム：シミュレーション結果 -->
-  <div>
+  <!-- 右カラム: シミュレーション結果（印刷時はA4横1枚に最適化） -->
+  <div id="rightResultColumn">
     <div class="card">
       <h2>
-        <span>3. シミュレーション結果（⑧）</span>
-        <button class="btn btn-outline btn-sm" id="exportBtn" onclick="exportResultCSV()" style="display:none;">📤 結果をCSV出力</button>
+        <span>3. シミュレーション結果</span>
+        <div class="flex-row no-print">
+          <button class="btn btn-outline btn-sm" id="exportBtn" onclick="exportResultCSV()" style="display:none;">CSV出力</button>
+          <button class="btn btn-primary btn-sm" id="printBtn" onclick="printA4Report()" style="display:none;">🖨️ A4印刷 / PDF保存</button>
+        </div>
       </h2>
 
-      <div id="map"></div>
-
-      <div class="kpi-grid">
-        <div class="kpi-box">
-          <div class="kpi-label">総稼働時間（走行＋滞在）</div>
-          <div class="kpi-val accent" id="kpiTotalWork">-- 時間 -- 分</div>
+      <!-- 印刷時のみ表示される帳票ヘッダー -->
+      <div class="print-only-header">
+        <div>
+          <h1 id="printCourseTitle">配送運行指示書・ルートシミュレーション</h1>
+          <div style="font-size:8.5pt; color:#475569;">作成ツール: 配送ルート・稼働時間シミュレーター</div>
         </div>
-        <div class="kpi-box">
-          <div class="kpi-label">到着完了予定時刻</div>
-          <div class="kpi-val" id="kpiEndTime">--:--</div>
-        </div>
-        <div class="kpi-box">
-          <div class="kpi-label">総走行時間 / 総走行距離</div>
-          <div class="kpi-val" id="kpiDriveInfo">-- 分 / -- km</div>
-        </div>
-        <div class="kpi-box">
-          <div class="kpi-label">高速料金合計（目安）</div>
-          <div class="kpi-val warn" id="kpiToll">¥0</div>
+        <div class="print-meta" id="printMetaInfo">
+          運行日: ----/--/-- | 車両: 中型車
         </div>
       </div>
 
-      <div id="highwaySummaryBox" style="background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:10px 12px; margin-bottom:14px; font-size:0.85rem;">
-        <strong style="color:var(--primary);">🛣️ 高速道路使用区間説明：</strong>
-        <div id="highwaySummaryText" style="margin-top:4px; color:var(--muted);">「シミュレーション計算する」を押すと区間詳細が表示されます。</div>
-      </div>
+      <!-- 印刷時に「左：コース詳細・時刻表 / 右：全体地図」になるラッパー -->
+      <div class="print-layout-wrapper">
+        <!-- 地図エリア（画面では上、印刷時は右側） -->
+        <div class="print-right-map">
+          <div id="map"></div>
+        </div>
 
-      <div style="overflow-x:auto;">
-        <table>
-          <thead>
-            <tr>
-              <th>時刻</th>
-              <th>地点名・住所</th>
-              <th>滞在</th>
-              <th>次区間ルート・高速詳細</th>
-            </tr>
-          </thead>
-          <tbody id="resultTableBody">
-            <tr><td colspan="4" style="text-align:center; color:var(--muted); padding:20px;">左側の条件を確認し、計算ボタンを押してください。</td></tr>
-          </tbody>
-        </table>
+        <!-- コース詳細・サマリー・タイムライン（画面では下、印刷時は左側） -->
+        <div class="print-left-details">
+          <div class="kpi-grid">
+            <div class="kpi-box">
+              <div class="kpi-label">総稼働時間 (走行+滞在)</div>
+              <div class="kpi-val accent" id="kpiTotalWork">-- 時間 -- 分</div>
+            </div>
+            <div class="kpi-box">
+              <div class="kpi-label">出発 → 到着完了予定</div>
+              <div class="kpi-val" id="kpiEndTime">--:-- → --:--</div>
+            </div>
+            <div class="kpi-box">
+              <div class="kpi-label">総走行時間 / 総走行距離</div>
+              <div class="kpi-val" id="kpiDriveInfo">-- 分 / -- km</div>
+            </div>
+            <div class="kpi-box">
+              <div class="kpi-label">高速料金合計 (目安)</div>
+              <div class="kpi-val warn" id="kpiToll">¥0</div>
+            </div>
+          </div>
+
+          <div id="highwaySummaryBox" style="background: var(--bg); border:1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-bottom:14px; font-size:0.85rem;">
+            <strong style="color:var(--primary);">高速道路使用区間説明:</strong>
+            <div id="highwaySummaryText" style="margin-top:4px; color:var(--muted);">「シミュレーション計算する」を押すと区間詳細が表示されます。</div>
+          </div>
+
+          <div style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>時刻</th>
+                  <th>地点名 / 住所</th>
+                  <th>滞在</th>
+                  <th>次区間ルート / 高速詳細</th>
+                </tr>
+              </thead>
+              <tbody id="resultTableBody">
+                <tr><td colspan="4" style="text-align:center; color:var(--muted); padding: 20px;">左側の条件を確認し、計算ボタンを押してください。</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-  // 初期サンプルデータ（関東圏の物流拠点・店舗イメージ）
-  let stops = [
-    { name: "八潮常温センター（出発）", address: "埼玉県八潮市大瀬", stayMin: 0, useHighway: true, lat: 35.8075, lng: 139.8442 },
-    { name: "草加八幡店", address: "埼玉県草加市八幡町", stayMin: 25, useHighway: false, lat: 35.8394, lng: 139.8147 },
-    { name: "赤羽台店", address: "東京都北区赤羽台", stayMin: 30, useHighway: true, lat: 35.7816, lng: 139.7176 },
-    { name: "横浜港北センター", address: "神奈川県横浜市都筑区川向町", stayMin: 20, useHighway: false, lat: 35.5186, lng: 139.5912 }
-  ];
+// ==========================================
+// 初期データ・定数
+// ==========================================
+const DAILY_API_LIMIT = 100;
+const STORAGE_KEY_API = "wing_gmaps_key";
+const STORAGE_KEY_COURSES = "wing_saved_courses_v1";
+const STORAGE_KEY_QUOTA = "wing_api_quota_v1";
 
-  // デモ用主要エリア座標辞書（住所文字列から緯度経度を推定）
-  const geoDict = [
-    { key: "八潮", lat: 35.8225, lng: 139.8392, ic: "八潮IC" },
-    { key: "草加", lat: 35.8255, lng: 139.8055, ic: "草加IC" },
-    { key: "三郷", lat: 35.8302, lng: 139.8722, ic: "三郷IC" },
-    { key: "越谷", lat: 35.8911, lng: 139.7909, ic: "浦和IC" },
-    { key: "川口", lat: 35.8078, lng: 139.7241, ic: "川口中央IC" },
-    { key: "さいたま", lat: 35.8617, lng: 139.6455, ic: "与野IC" },
-    { key: "赤羽", lat: 35.7781, lng: 139.7209, ic: "板橋本町IC" },
-    { key: "北区", lat: 35.7528, lng: 139.7335, ic: "王子北IC" },
-    { key: "足立", lat: 35.7750, lng: 139.8044, ic: "加平IC" },
-    { key: "江東", lat: 35.6728, lng: 139.8174, ic: "木場IC" },
-    { key: "大田", lat: 35.5613, lng: 139.7160, ic: "鈴ヶ森IC" },
-    { key: "渋谷", lat: 35.6580, lng: 139.7016, ic: "渋谷IC" },
-    { key: "新宿", lat: 35.6895, lng: 139.6917, ic: "新宿IC" },
-    { key: "横浜", lat: 35.4437, lng: 139.6380, ic: "港北IC" },
-    { key: "川崎", lat: 35.5308, lng: 139.7029, ic: "川崎IC" },
-    { key: "船橋", lat: 35.6947, lng: 139.9826, ic: "船橋IC" },
-    { key: "千葉", lat: 35.6074, lng: 140.1065, ic: "穴川IC" },
-    { key: "柏", lat: 35.8676, lng: 139.9757, ic: "柏IC" },
-    { key: "厚木", lat: 35.4431, lng: 139.3625, ic: "厚木IC" },
-    { key: "八王子", lat: 35.6664, lng: 139.3160, ic: "八王子IC" }
-  ];
+let stops = [
+  { name: "八潮常温センター(出発)", address: "埼玉県八潮市大瀬", stayMin: 0, useHighway: true },
+  { name: "草加八幡店", address: "埼玉県草加市八幡町", stayMin: 25, useHighway: false },
+  { name: "赤羽台店", address: "東京都北区赤羽台", stayMin: 30, useHighway: true },
+  { name: "横浜港北センター", address: "神奈川県横浜市都筑区川向町", stayMin: 20, useHighway: false }
+];
 
-  let map, routeLayerGroup;
-  let lastSimulationRows = [];
+// デモ用主要エリア座標辞書
+const geoDict = [
+  { key: "八潮", lat: 35.8225, lng: 139.8392, ic: "八潮IC" },
+  { key: "草加", lat: 35.8255, lng: 139.8055, ic: "草加IC" },
+  { key: "三郷", lat: 35.8302, lng: 139.8722, ic: "三郷IC" },
+  { key: "越谷", lat: 35.8911, lng: 139.7909, ic: "浦和IC" },
+  { key: "川口", lat: 35.8078, lng: 139.7241, ic: "川口中央IC" },
+  { key: "さいたま", lat: 35.8617, lng: 139.6455, ic: "与野IC" },
+  { key: "赤羽", lat: 35.7781, lng: 139.7209, ic: "板橋本町IC" },
+  { key: "北区", lat: 35.7528, lng: 139.7335, ic: "王子北IC" },
+  { key: "足立", lat: 35.7750, lng: 139.8044, ic: "加平IC" },
+  { key: "江東", lat: 35.6728, lng: 139.8174, ic: "木場IC" },
+  { key: "大田", lat: 35.5613, lng: 139.7160, ic: "鈴ヶ森IC" },
+  { key: "渋谷", lat: 35.6580, lng: 139.7016, ic: "渋谷IC" },
+  { key: "新宿", lat: 35.6895, lng: 139.6917, ic: "新宿IC" },
+  { key: "横浜", lat: 35.4437, lng: 139.6380, ic: "港北IC" },
+  { key: "川崎", lat: 35.5308, lng: 139.7029, ic: "川崎IC" },
+  { key: "船橋", lat: 35.6947, lng: 139.9826, ic: "船橋IC" },
+  { key: "千葉", lat: 35.6074, lng: 140.1065, ic: "穴川IC" },
+  { key: "柏", lat: 35.8676, lng: 139.9757, ic: "柏IC" },
+  { key: "厚木", lat: 35.4431, lng: 139.3625, ic: "厚木IC" },
+  { key: "八王子", lat: 35.6664, lng: 139.3160, ic: "八王子IC" }
+];
 
-  // 初期化
-  window.onload = () => {
-    const today = new Date().toISOString().split("T")[0];
-    document.getElementById("runDate").value = today;
+// ジオコーディング結果のセッション内キャッシュ（同じ住所の再検索によるAPI消費を節約）
+const geocodeCache = {};
 
-    const savedKey = localStorage.getItem("wing_gmaps_key");
-    if (savedKey) {
-      document.getElementById("gmapsApiKey").value = savedKey;
-      updateApiModeUI(true);
-    }
+let map, routeLayerGroup;
+let lastSimulationRows = [];
+let lastBounds = null;
 
-    initMap();
-    renderStops();
-    runSimulation();
-  };
+// ==========================================
+// 初期化処理
+// ==========================================
+window.onload = () => {
+  const today = getTodayString();
+  document.getElementById("runDate").value = today;
 
-  function initMap() {
-    map = L.map("map").setView([35.72, 139.78], 10);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "&copy; OpenStreetMap contributors"
-    }).addTo(map);
-    routeLayerGroup = L.layerGroup().addTo(map);
-  }
-
-  function toggleApiBox() {
-    const box = document.getElementById("apiKeyBox");
-    box.style.display = box.style.display === "none" ? "block" : "none";
-  }
-
-  function saveApiKey() {
-    const key = document.getElementById("gmapsApiKey").value.trim();
-    if (!key) return alert("APIキーを入力してください。");
-    localStorage.setItem("wing_gmaps_key", key);
+  const savedKey = localStorage.getItem(STORAGE_KEY_API);
+  if (savedKey) {
+    document.getElementById("gmapsApiKey").value = savedKey;
     updateApiModeUI(true);
-    alert("APIキーをブラウザに保存しました。");
-  }
-
-  function clearApiKey() {
-    localStorage.removeItem("wing_gmaps_key");
-    document.getElementById("gmapsApiKey").value = "";
+  } else {
     updateApiModeUI(false);
   }
 
-  function updateApiModeUI(hasKey) {
-    const badge = document.getElementById("modeBadge");
-    const desc = document.getElementById("modeDesc");
-    if (hasKey) {
-      badge.textContent = "Google Maps API 連携設定済";
-      badge.style.background = "#10b981";
-      desc.textContent = "Google Maps APIキーが設定されています（本番APIリクエストモード）。";
-    } else {
-      badge.textContent = "デモシミュレーター稼働中（API不要）";
-      badge.style.background = "#f59e0b";
-      desc.textContent = "現在はデモ計算エンジン（主要拠点データ＋距離推定）で動作しています。";
+  refreshQuotaBadge();
+  refreshCourseDropdown();
+  initMap();
+  renderStops();
+  runSimulation();
+};
+
+function getTodayString() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function initMap() {
+  map = L.map("map").setView([35.72, 139.78], 10);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "&copy; OpenStreetMap contributors"
+  }).addTo(map);
+  routeLayerGroup = L.layerGroup().addTo(map);
+}
+
+// ==========================================
+// 1日のAPI使用上限管理（100回まで）
+// ==========================================
+function getQuotaData() {
+  const today = getTodayString();
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_QUOTA);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed.date === today) {
+        return parsed;
+      }
     }
+  } catch (e) {}
+  return { date: today, count: 0 };
+}
+
+function incrementApiUsage(calls = 1) {
+  const data = getQuotaData();
+  data.count += calls;
+  localStorage.setItem(STORAGE_KEY_QUOTA, JSON.stringify(data));
+  refreshQuotaBadge();
+}
+
+function canUseGoogleApi(estimatedCalls = 1) {
+  const data = getQuotaData();
+  return (data.count + estimatedCalls) <= DAILY_API_LIMIT;
+}
+
+function refreshQuotaBadge() {
+  const data = getQuotaData();
+  const badge = document.getElementById("quotaBadge");
+  badge.textContent = `本日API利用: ${data.count} / ${DAILY_API_LIMIT} 回`;
+  if (data.count >= DAILY_API_LIMIT) {
+    badge.style.background = "rgba(239, 68, 68, 0.3)";
+    badge.style.borderColor = "#ef4444";
+    badge.style.color = "#fca5a5";
+  } else {
+    badge.style.background = "var(--panel-light)";
+    badge.style.borderColor = "var(--border)";
+    badge.style.color = "#e2e8f0";
+  }
+}
+
+// ==========================================
+// APIキー設定 UI
+// ==========================================
+function toggleApiBox() {
+  const box = document.getElementById("apiKeyBox");
+  box.style.display = box.style.display === "none" ? "block" : "none";
+}
+
+function saveApiKey() {
+  const key = document.getElementById("gmapsApiKey").value.trim();
+  if (!key) return alert("APIキーを入力してください。");
+  localStorage.setItem(STORAGE_KEY_API, key);
+  updateApiModeUI(true);
+  alert("APIキーをブラウザに保存しました。シミュレーション実行時にRoutes API / Geocoding APIを使用します。");
+}
+
+function clearApiKey() {
+  localStorage.removeItem(STORAGE_KEY_API);
+  document.getElementById("gmapsApiKey").value = "";
+  updateApiModeUI(false);
+  alert("APIキーを解除し、デモ計算モードに戻しました。");
+}
+
+function updateApiModeUI(hasKey) {
+  const badge = document.getElementById("modeBadge");
+  const desc = document.getElementById("modeDesc");
+  if (hasKey) {
+    badge.textContent = "Google Routes & Geocoding API 連携中";
+    badge.style.background = "#10b981";
+    badge.style.color = "#022c22";
+    desc.textContent = "Google Maps APIキー設定済（実道路ルート・実測距離で計算します）";
+  } else {
+    badge.textContent = "デモシミュレーター稼働中 (API不要)";
+    badge.style.background = "#f59e0b";
+    badge.style.color = "#000";
+    desc.textContent = "現在はデモ計算エンジン（主要拠点データ+距離推定）で動作しています。";
+  }
+}
+
+// ==========================================
+// ① コース保存・読込・セーブデータ書き出し/読込
+// ==========================================
+function getAllSavedCourses() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_COURSES);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function refreshCourseDropdown(selectedKey = "") {
+  const courses = getAllSavedCourses();
+  const select = document.getElementById("savedCourseSelect");
+  select.innerHTML = `<option value="">-- 保存済みコースを選択 (${Object.keys(courses).length}件) --</option>`;
+  Object.keys(courses).forEach(courseName => {
+    const opt = document.createElement("option");
+    opt.value = courseName;
+    opt.textContent = `${courseName} (${courses[courseName].stops.length}地点)`;
+    if (courseName === selectedKey) opt.selected = true;
+    select.appendChild(opt);
+  });
+}
+
+function saveCurrentCourse() {
+  const courseName = document.getElementById("courseNameInput").value.trim();
+  if (!courseName) {
+    return alert("保存する「コース名」を入力してください。");
+  }
+  if (stops.length < 2) {
+    return alert("出発地点と到着地点の最低2地点を設定してください。");
   }
 
-  function toggleStayMode() {
-    const mode = document.getElementById("stayMode").value;
-    document.getElementById("uniformStayMin").disabled = (mode === "individual");
-    renderStops();
+  const courses = getAllSavedCourses();
+  courses[courseName] = {
+    courseName: courseName,
+    startTime: document.getElementById("startTime").value || "08:00",
+    vehicleType: document.getElementById("vehicleType").value,
+    highwayMode: document.getElementById("highwayMode").value,
+    stayMode: document.getElementById("stayMode").value,
+    uniformStayMin: document.getElementById("uniformStayMin").value,
+    stops: JSON.parse(JSON.stringify(stops)), // ディープコピーで保存
+    updatedAt: new Date().toLocaleString("ja-JP")
+  };
+
+  localStorage.setItem(STORAGE_KEY_COURSES, JSON.stringify(courses));
+  refreshCourseDropdown(courseName);
+  alert(`コース「${courseName}」を保存しました。`);
+}
+
+function loadSelectedCourse() {
+  const courseName = document.getElementById("savedCourseSelect").value;
+  if (!courseName) return;
+
+  const courses = getAllSavedCourses();
+  const data = courses[courseName];
+  if (!data) return;
+
+  document.getElementById("courseNameInput").value = data.courseName;
+  if (data.startTime) document.getElementById("startTime").value = data.startTime;
+  if (data.vehicleType) document.getElementById("vehicleType").value = data.vehicleType;
+  if (data.highwayMode) document.getElementById("highwayMode").value = data.highwayMode;
+  if (data.stayMode) {
+    document.getElementById("stayMode").value = data.stayMode;
+    document.getElementById("uniformStayMin").disabled = (data.stayMode === "individual");
+  }
+  if (data.uniformStayMin !== undefined) {
+    document.getElementById("uniformStayMin").value = data.uniformStayMin;
   }
 
-  function renderStops() {
-    const container = document.getElementById("stopsContainer");
-    const highwayMode = document.getElementById("highwayMode").value;
-    const stayMode = document.getElementById("stayMode").value;
-    const uniformMin = parseInt(document.getElementById("uniformStayMin").value || "0", 10);
+  stops = JSON.parse(JSON.stringify(data.stops));
+  renderStops();
+  runSimulation();
+}
 
-    container.innerHTML = "";
+function deleteSelectedCourse() {
+  const courseName = document.getElementById("savedCourseSelect").value;
+  if (!courseName) return alert("削除するコースをプルダウンから選択してください。");
+  if (!confirm(`保存済みコース「${courseName}」を削除しますか？`)) return;
 
-    stops.forEach((stop, idx) => {
-      const isFirst = idx === 0;
-      const isLast = idx === stops.length - 1;
-      let roleLabel = `経由地 ${idx}`;
-      let badgeClass = "";
-      if (isFirst) { roleLabel = "② 出発地点"; badgeClass = "start"; }
-      else if (isLast) { roleLabel = "③ 最終到着地点"; badgeClass = "end"; }
+  const courses = getAllSavedCourses();
+  delete courses[courseName];
+  localStorage.setItem(STORAGE_KEY_COURSES, JSON.stringify(courses));
+  document.getElementById("courseNameInput").value = "";
+  refreshCourseDropdown();
+}
 
-      const stayDisabled = (isFirst || stayMode === "uniform") ? "disabled" : "";
-      const stayDisplayVal = isFirst ? 0 : (stayMode === "uniform" ? uniformMin : stop.stayMin);
+function exportCoursesJSON() {
+  const courses = getAllSavedCourses();
+  if (Object.keys(courses).length === 0) {
+    return alert("書き出す保存済みコースがありません。先にコースを保存してください。");
+  }
+  const exportPayload = {
+    app: "DeliveryRouteSimulator",
+    version: "1.0",
+    exportedAt: new Date().toISOString(),
+    courses: courses
+  };
+  const blob = new Blob([JSON.stringify(exportPayload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `配送コースセーブデータ_${getTodayString()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
-      const stopDiv = document.createElement("div");
-      stopDiv.className = "stop-item";
-      stopDiv.innerHTML = `
-        <div class="stop-header">
-          <span class="stop-badge ${badgeClass}">${roleLabel}</span>
-          <div class="flex-row">
-            ${idx > 0 ? `<button class="btn btn-outline btn-sm" onclick="moveStop(${idx}, -1)" title="上へ">↑</button>` : ""}
-            ${idx < stops.length - 1 ? `<button class="btn btn-outline btn-sm" onclick="moveStop(${idx}, 1)" title="下へ">↓</button>` : ""}
-            ${stops.length > 2 ? `<button class="btn btn-danger" onclick="removeStop(${idx})">削除</button>` : ""}
-          </div>
-        </div>
-        <div class="stop-fields">
-          <div>
-            <label>① 名称</label>
-            <input type="text" value="${escapeHtml(stop.name)}" onchange="stops[${idx}].name = this.value" placeholder="例：〇〇店" />
-          </div>
-          <div>
-            <label>②③ 住所</label>
-            <input type="text" value="${escapeHtml(stop.address)}" onchange="stops[${idx}].address = this.value" placeholder="例：埼玉県八潮市..." />
-          </div>
-          <div>
-            <label>⑥ 滞在(分)</label>
-            <input type="number" value="${stayDisplayVal}" min="0" step="5" ${stayDisabled} onchange="stops[${idx}].stayMin = parseInt(this.value || 0, 10)" />
-          </div>
-        </div>
-      `;
-      container.appendChild(stopDiv);
+function importCoursesJSON(event) {
+  const file = event.target.files[0];
+  if (!file) return;
 
-      // 地点間の高速道路チェックボックス（最終地点以外）
-      if (!isLast) {
-        const connDiv = document.createElement("div");
-        connDiv.className = "segment-connector";
-        const isChecked = stop.useHighway;
-        if (highwayMode === "manual") {
-          connDiv.innerHTML = `
-            <label class="highway-pill ${isChecked ? "active" : ""}">
-              <input type="checkbox" ${isChecked ? "checked" : ""} onchange="toggleSegmentHighway(${idx}, this.checked)" />
-              <span>④ この区間で高速道路を使用（${escapeHtml(stop.name || "地点" + (idx+1))} → 次地点）</span>
-            </label>
-          `;
-        } else {
-          connDiv.innerHTML = `
-            <div class="highway-pill" style="cursor:default; opacity:0.85;">
-              <span>🤖 高速使用：自動判定モード</span>
-            </div>
-          `;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      const importedCourses = parsed.courses || parsed;
+      if (typeof importedCourses !== "object" || Array.isArray(importedCourses)) {
+        throw new Error("セーブデータの形式が正しくありません。");
+      }
+
+      const currentCourses = getAllSavedCourses();
+      let importCount = 0;
+      Object.keys(importedCourses).forEach(key => {
+        if (importedCourses[key] && Array.isArray(importedCourses[key].stops)) {
+          currentCourses[key] = importedCourses[key];
+          importCount++;
         }
-        container.appendChild(connDiv);
+      });
+
+      if (importCount === 0) {
+        throw new Error("有効なコースデータが見つかりませんでした。");
       }
-    });
-  }
 
-  function addStop() {
-    stops.push({
-      name: `配送先 ${stops.length}`,
-      address: "東京都足立区綾瀬",
-      stayMin: 20,
-      useHighway: false
-    });
-    renderStops();
-  }
-
-  function removeStop(idx) {
-    stops.splice(idx, 1);
-    renderStops();
-  }
-
-  function moveStop(idx, dir) {
-    const target = idx + dir;
-    if (target < 0 || target >= stops.length) return;
-    [stops[idx], stops[target]] = [stops[target], stops[idx]];
-    renderStops();
-  }
-
-  function toggleSegmentHighway(idx, checked) {
-    stops[idx].useHighway = checked;
-    renderStops();
-  }
-
-  // 住所から座標と最寄りICを推定（デモ計算エンジン用）
-  function resolveLocationDemo(address, index) {
-    for (const item of geoDict) {
-      if (address.includes(item.key)) {
-        return { lat: item.lat, lng: item.lng, ic: item.ic };
-      }
+      localStorage.setItem(STORAGE_KEY_COURSES, JSON.stringify(currentCourses));
+      const firstKey = Object.keys(importedCourses)[0];
+      refreshCourseDropdown(firstKey);
+      loadSelectedCourse();
+      alert(`${importCount}件のコースデータを読み込みました。`);
+    } catch (err) {
+      alert("セーブデータの読み込みに失敗しました: " + err.message);
     }
-    // 辞書にない場合はハッシュ値から関東圏内の擬似座標を生成
-    let hash = 0;
-    for (let i = 0; i < address.length; i++) hash = address.charCodeAt(i) + ((hash << 5) - hash);
-    const latOffset = ((hash % 40) / 100);
-    const lngOffset = (((hash >> 4) % 40) / 100);
-    return {
-      lat: 35.68 + latOffset,
-      lng: 139.75 + lngOffset,
-      ic: `${address.slice(0, 4)}付近IC`
-    };
+    event.target.value = "";
+  };
+  reader.readAsText(file);
+}
+
+// ==========================================
+// 地点リスト UI 操作
+// ==========================================
+function toggleStayMode() {
+  const mode = document.getElementById("stayMode").value;
+  document.getElementById("uniformStayMin").disabled = (mode === "individual");
+  renderStops();
+}
+
+function renderStops() {
+  const container = document.getElementById("stopsContainer");
+  const highwayMode = document.getElementById("highwayMode").value;
+  const stayMode = document.getElementById("stayMode").value;
+  const uniformMin = parseInt(document.getElementById("uniformStayMin").value || "0", 10);
+
+  container.innerHTML = "";
+
+  stops.forEach((stop, idx) => {
+    const isFirst = idx === 0;
+    const isLast = idx === stops.length - 1;
+    let roleLabel = `経由地 ${idx}`;
+    let badgeClass = "";
+
+    if (isFirst) { roleLabel = "出発地点"; badgeClass = "start"; }
+    else if (isLast) { roleLabel = "最終到着地点"; badgeClass = "end"; }
+
+    const stayDisabled = (isFirst || stayMode === "uniform") ? "disabled" : "";
+    const stayDisplayVal = isFirst ? 0 : (stayMode === "uniform" ? uniformMin : stop.stayMin);
+
+    const stopDiv = document.createElement("div");
+    stopDiv.className = "stop-item";
+    stopDiv.innerHTML = `
+      <div class="stop-header">
+        <span class="stop-badge ${badgeClass}">${roleLabel}</span>
+        <div class="flex-row">
+          ${idx > 0 ? `<button class="btn btn-outline btn-sm" onclick="moveStop(${idx}, -1)" title="上へ">↑</button>` : ""}
+          ${idx < stops.length - 1 ? `<button class="btn btn-outline btn-sm" onclick="moveStop(${idx}, 1)" title="下へ">↓</button>` : ""}
+          ${stops.length > 2 ? `<button class="btn btn-danger" onclick="removeStop(${idx})">削除</button>` : ""}
+        </div>
+      </div>
+      <div class="stop-fields">
+        <div>
+          <label>名称</label>
+          <input type="text" value="${escapeHtml(stop.name)}" onchange="stops[${idx}].name = this.value" placeholder="例: ○○店" />
+        </div>
+        <div>
+          <label>住所</label>
+          <input type="text" value="${escapeHtml(stop.address)}" onchange="stops[${idx}].address = this.value" placeholder="例: 埼玉県八潮市..." />
+        </div>
+        <div>
+          <label>滞在(分)</label>
+          <input type="number" value="${stayDisplayVal}" min="0" step="5" ${stayDisabled} onchange="stops[${idx}].stayMin = parseInt(this.value || 0, 10)" />
+        </div>
+      </div>
+    `;
+    container.appendChild(stopDiv);
+
+    // 地点間の高速道路チェックボックス（最終地点以外）
+    if (!isLast) {
+      const connDiv = document.createElement("div");
+      connDiv.className = "segment-connector";
+      const isChecked = stop.useHighway;
+
+      if (highwayMode === "manual") {
+        connDiv.innerHTML = `
+          <label class="highway-pill ${isChecked ? "active" : ""}">
+            <input type="checkbox" ${isChecked ? "checked" : ""} onchange="toggleSegmentHighway(${idx}, this.checked)" />
+            <span>この区間で高速道路を使用 (${escapeHtml(stop.name || "地点" + (idx + 1))} → 次地点)</span>
+          </label>
+        `;
+      } else {
+        connDiv.innerHTML = `
+          <div class="highway-pill" style="cursor: default; opacity:0.85;">
+            <span>高速使用: 自動判定モード (22km以上で自動利用)</span>
+          </div>
+        `;
+      }
+      container.appendChild(connDiv);
+    }
+  });
+}
+
+function addStop() {
+  stops.push({
+    name: `配送先 ${stops.length}`,
+    address: "東京都足立区綾瀬",
+    stayMin: 20,
+    useHighway: false
+  });
+  renderStops();
+}
+
+function removeStop(idx) {
+  stops.splice(idx, 1);
+  renderStops();
+}
+
+function moveStop(idx, dir) {
+  const target = idx + dir;
+  if (target < 0 || target >= stops.length) return;
+  [stops[idx], stops[target]] = [stops[target], stops[idx]];
+  renderStops();
+}
+
+function toggleSegmentHighway(idx, checked) {
+  stops[idx].useHighway = checked;
+  renderStops();
+}
+
+// ==========================================
+// Google Geocoding API & Routes API 呼び出し
+// ==========================================
+async function geocodeAddressGoogle(address, apiKey) {
+  const cleanAddr = address.trim();
+  if (geocodeCache[cleanAddr]) {
+    return geocodeCache[cleanAddr];
   }
 
-  // 2点間の直線距離(km)
-  function calcHaversineKm(lat1, lon1, lat2, lon2) {
-    const R = 6371;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat / 2) ** 2 +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-              Math.sin(dLon / 2) ** 2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(cleanAddr)}&language=ja&region=jp&key=${encodeURIComponent(apiKey)}`;
+  const res = await fetch(url);
+  incrementApiUsage(1);
+
+  if (!res.ok) {
+    throw new Error(`Geocoding API HTTPエラー: ${res.status}`);
+  }
+  const data = await res.json();
+  if (data.status !== "OK" || !data.results || data.results.length === 0) {
+    throw new Error(`住所「${cleanAddr}」の座標取得に失敗しました (${data.status})`);
   }
 
-  // メインシミュレーション計算
-  function runSimulation() {
-    if (stops.length < 2) return alert("出発地点と到着地点の最低2地点を入力してください。");
+  const loc = data.results[0].geometry.location;
+  const result = {
+    lat: loc.lat,
+    lng: loc.lng,
+    formattedAddress: data.results[0].formatted_address,
+    ic: `${cleanAddr.slice(0, 5)}付近IC`
+  };
+  geocodeCache[cleanAddr] = result;
+  return result;
+}
 
+async function computeRouteGoogle(originPt, destPt, avoidHighways, apiKey) {
+  const url = "https://routes.googleapis.com/directions/v2:computeRoutes";
+  const body = {
+    origin: {
+      location: { latLng: { latitude: originPt.lat, longitude: originPt.lng } }
+    },
+    destination: {
+      location: { latLng: { latitude: destPt.lat, longitude: destPt.lng } }
+    },
+    travelMode: "DRIVE",
+    routingPreference: "TRAFFIC_AWARE",
+    routeModifiers: {
+      avoidHighways: avoidHighways
+    },
+    languageCode: "ja",
+    units: "METRIC"
+  };
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Goog-Api-Key": apiKey,
+      "X-Goog-FieldMask": "routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline,routes.description"
+    },
+    body: JSON.stringify(body)
+  });
+  incrementApiUsage(1);
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Routes API エラー (${res.status}): ${errText}`);
+  }
+  const data = await res.json();
+  if (!data.routes || data.routes.length === 0) {
+    throw new Error("ルートが見つかりませんでした。");
+  }
+
+  const route = data.routes[0];
+  const distanceKm = Math.round((route.distanceMeters / 1000) * 10) / 10;
+  const durationSec = parseInt(String(route.duration || "0s").replace("s", ""), 10);
+  const durationMin = Math.max(1, Math.round(durationSec / 60));
+  const decodedCoords = route.polyline && route.polyline.encodedPolyline
+    ? decodePolyline(route.polyline.encodedPolyline)
+    : [[originPt.lat, originPt.lng], [destPt.lat, destPt.lng]];
+
+  return {
+    distanceKm,
+    durationMin,
+    description: route.description || "",
+    coords: decodedCoords
+  };
+}
+
+// Google Encoded Polyline デコーダ（Leaflet描画用）
+function decodePolyline(encoded) {
+  let index = 0, len = encoded.length;
+  let lat = 0, lng = 0;
+  const array = [];
+  while (index < len) {
+    let b, shift = 0, result = 0;
+    do {
+      b = encoded.charCodeAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    const dlat = ((result & 1) ? ~(result >> 1) : (result >> 1));
+    lat += dlat;
+
+    shift = 0;
+    result = 0;
+    do {
+      b = encoded.charCodeAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    const dlng = ((result & 1) ? ~(result >> 1) : (result >> 1));
+    lng += dlng;
+
+    array.push([lat * 1e-5, lng * 1e-5]);
+  }
+  return array;
+}
+
+// ==========================================
+// デモ用計算エンジン（API未設定・上限到達時用）
+// ==========================================
+function resolveLocationDemo(address) {
+  for (const item of geoDict) {
+    if (address.includes(item.key)) {
+      return { lat: item.lat, lng: item.lng, ic: item.ic };
+    }
+  }
+  let hash = 0;
+  for (let i = 0; i < address.length; i++) {
+    hash = address.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const latOffset = ((hash % 40) / 100);
+  const lngOffset = (((hash >> 4) % 40) / 100);
+  return {
+    lat: 35.68 + latOffset,
+    lng: 139.75 + lngOffset,
+    ic: `${address.slice(0, 4)}付近IC`
+  };
+}
+
+function calcHaversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// ==========================================
+// メインシミュレーション計算
+// ==========================================
+async function runSimulation() {
+  if (stops.length < 2) {
+    return alert("出発地点と到着地点の最低2地点を入力してください。");
+  }
+
+  const calcBtn = document.getElementById("calcBtn");
+  calcBtn.disabled = true;
+  calcBtn.textContent = "ルートを計算中...";
+
+  try {
+    const apiKey = localStorage.getItem(STORAGE_KEY_API) || "";
     const startTimeStr = document.getElementById("startTime").value || "08:00";
     const highwayMode = document.getElementById("highwayMode").value;
     const stayMode = document.getElementById("stayMode").value;
     const uniformStay = parseInt(document.getElementById("uniformStayMin").value || "0", 10);
     const vehicleMult = parseFloat(document.getElementById("vehicleType").value || "1.0");
 
+    // 今回の計算で必要なAPI呼び出し回数の見積もり（未キャッシュ住所数 + 区間数）
+    const uncachedCount = stops.filter(s => !geocodeCache[s.address.trim()]).length;
+    const segmentCount = stops.length - 1;
+    const estimatedCalls = uncachedCount + segmentCount;
+
+    let useGoogleApi = Boolean(apiKey);
+    if (useGoogleApi && !canUseGoogleApi(estimatedCalls)) {
+      alert(`本日のGoogle API利用上限（${DAILY_API_LIMIT}回）に達するため、デモ計算モードで実行します。`);
+      useGoogleApi = false;
+    }
+
+    // 1. 各地点の緯度経度解決
+    const resolvedPoints = [];
+    for (let i = 0; i < stops.length; i++) {
+      const s = stops[i];
+      let geo;
+      if (useGoogleApi) {
+        geo = await geocodeAddressGoogle(s.address, apiKey);
+      } else {
+        geo = resolveLocationDemo(s.address);
+      }
+      resolvedPoints.push({ ...s, geo });
+    }
+
+    // 2. 地図クリア＆マーカー配置
+    routeLayerGroup.clearLayers();
+    const allCoords = [];
+
+    resolvedPoints.forEach((pt, idx) => {
+      allCoords.push([pt.geo.lat, pt.geo.lng]);
+      L.marker([pt.geo.lat, pt.geo.lng])
+        .addTo(routeLayerGroup)
+        .bindPopup(`<b>${idx + 1}. ${escapeHtml(pt.name)}</b><br>${escapeHtml(pt.address)}`);
+    });
+
+    // 3. 区間ごとのルート・時間・料金計算
     let [startH, startM] = startTimeStr.split(":").map(Number);
     let currentMinutes = startH * 60 + startM;
-
     let totalDriveMin = 0;
     let totalStayMin = 0;
     let totalDistKm = 0;
@@ -675,26 +1279,11 @@
     let highwayExplanations = [];
     lastSimulationRows = [];
 
-    // 地図クリア
-    routeLayerGroup.clearLayers();
-    const resolvedPoints = stops.map((s, i) => ({
-      ...s,
-      geo: resolveLocationDemo(s.address, i)
-    }));
-
     const tbody = document.getElementById("resultTableBody");
     tbody.innerHTML = "";
 
-    const latLngs = [];
-
-    resolvedPoints.forEach((pt, idx) => {
-      latLngs.push([pt.geo.lat, pt.geo.lng]);
-
-      // マーカー描画
-      L.marker([pt.geo.lat, pt.geo.lng])
-        .addTo(routeLayerGroup)
-        .bindPopup(`<b>${idx + 1}. ${escapeHtml(pt.name)}</b><br>${escapeHtml(pt.address)}`);
-
+    for (let idx = 0; idx < resolvedPoints.length; idx++) {
+      const pt = resolvedPoints[idx];
       const arrivalMin = currentMinutes;
       const stayMin = (idx === 0) ? 0 : (stayMode === "uniform" ? uniformStay : (pt.stayMin || 0));
       const departureMin = arrivalMin + stayMin;
@@ -706,43 +1295,67 @@
       if (idx < resolvedPoints.length - 1) {
         const nextPt = resolvedPoints[idx + 1];
         const straightKm = calcHaversineKm(pt.geo.lat, pt.geo.lng, nextPt.geo.lat, nextPt.geo.lng);
-        // 実道路係数（約1.32倍）
-        const roadKm = Math.max(1.5, Math.round(straightKm * 1.32 * 10) / 10);
+        const approxRoadKm = Math.max(1.5, Math.round(straightKm * 1.32 * 10) / 10);
 
-        // 高速道路使用判定
+        // 高速使用判定
         let useHwy = false;
         if (highwayMode === "auto") {
-          useHwy = roadKm >= 22.0; // 自動モード：22km以上の長距離区間で高速を自動採用
+          useHwy = approxRoadKm >= 22.0;
         } else {
           useHwy = pt.useHighway;
         }
 
-        // 所要時間と料金の算出
         let driveMin = 0;
+        let roadKm = 0;
         let tollYen = 0;
         let routeDesc = "";
+        let segCoords = [[pt.geo.lat, pt.geo.lng], [nextPt.geo.lat, nextPt.geo.lng]];
 
+        if (useGoogleApi) {
+          // Google Routes API による実ルート計算
+          const routeRes = await computeRouteGoogle(pt.geo, nextPt.geo, !useHwy, apiKey);
+          roadKm = routeRes.distanceKm;
+          driveMin = routeRes.durationMin;
+          segCoords = routeRes.coords;
+          routeDesc = routeRes.description ? `経由: ${routeRes.description}` : `${pt.geo.ic} → ${nextPt.geo.ic}`;
+        } else {
+          // デモエンジンによる計算
+          roadKm = approxRoadKm;
+          if (useHwy) {
+            driveMin = Math.round((roadKm / 62) * 60) + 6;
+            routeDesc = `${pt.geo.ic} → ${nextPt.geo.ic}`;
+          } else {
+            driveMin = Math.max(5, Math.round((roadKm / 26) * 60));
+          }
+        }
+
+        // 高速料金目安の算出（ETC・車種係数反映）
         if (useHwy) {
-          // 高速利用（平均時速62km/h想定＋IC乗り降りロス6分）
-          driveMin = Math.round((roadKm / 62) * 60) + 6;
-          // 首都高・NEXCO目安料金（初乗り300円＋1kmあたり約29円 × 車種係数）
           const rawToll = 300 + roadKm * 29 * vehicleMult;
           tollYen = Math.round(rawToll / 10) * 10;
-          routeDesc = `${pt.geo.ic} ➔ ${nextPt.geo.ic}`;
-          highwayExplanations.push(`・区間${idx + 1}（${pt.name} → ${nextPt.name}）：${routeDesc}（約${roadKm}km / 約¥${tollYen.toLocaleString()}）`);
+          highwayExplanations.push(
+            `区間${idx + 1} (${pt.name} → ${nextPt.name}): ${routeDesc} (約${roadKm}km / 約¥${tollYen.toLocaleString()})`
+          );
           nextSegHtml = `
-            <span class="tag-etc">高速使用</span> <strong>${driveMin}分</strong>（${roadKm}km）<br>
-            <span style="font-size:0.78rem; color:#93c5fd;">${routeDesc} / ¥${tollYen.toLocaleString()}</span>
+            <span class="tag-etc">高速使用</span> <strong>${driveMin}分</strong> (${roadKm}km)<br>
+            <span style="font-size:0.78rem; color:#93c5fd;">${escapeHtml(routeDesc)} / ¥${tollYen.toLocaleString()}</span>
           `;
           segExportText = `高速(${routeDesc}) ${driveMin}分 ${roadKm}km ¥${tollYen}`;
         } else {
-          // 一般道のみ（平均時速26km/h想定）
-          driveMin = Math.max(5, Math.round((roadKm / 26) * 60));
           nextSegHtml = `
-            <span class="tag-local">一般道</span> <strong>${driveMin}分</strong>（${roadKm}km）
+            <span class="tag-local">一般道</span> <strong>${driveMin}分</strong> (${roadKm}km)
           `;
           segExportText = `一般道 ${driveMin}分 ${roadKm}km ¥0`;
         }
+
+        // 区間ポリライン描画（高速は青、一般道は緑系）
+        L.polyline(segCoords, {
+          color: useHwy ? "#3b82f6" : "#10b981",
+          weight: 5,
+          opacity: 0.85
+        }).addTo(routeLayerGroup);
+
+        segCoords.forEach(c => allCoords.push(c));
 
         totalDriveMin += driveMin;
         totalDistKm += roadKm;
@@ -760,7 +1373,7 @@
 
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td style="white-space:nowrap;">${timeCell}</td>
+        <td style="white-space: nowrap;">${timeCell}</td>
         <td>
           <strong>${escapeHtml(pt.name)}</strong><br>
           <span style="font-size:0.78rem; color:var(--muted);">${escapeHtml(pt.address)}</span>
@@ -779,20 +1392,22 @@
         出発時刻: idx === resolvedPoints.length - 1 ? "-" : depStr,
         次区間詳細: segExportText
       });
-    });
-
-    // ルート線描画
-    if (latLngs.length >= 2) {
-      const polyline = L.polyline(latLngs, { color: "#3b82f6", weight: 4, opacity: 0.85 }).addTo(routeLayerGroup);
-      map.fitBounds(polyline.getBounds(), { padding: [30, 30] });
     }
 
-    // KPI更新
+    // 地図のズーム範囲を全ルートに合わせる
+    if (allCoords.length >= 2) {
+      lastBounds = L.latLngBounds(allCoords);
+      map.fitBounds(lastBounds, { padding: [30, 30] });
+    }
+
+    // KPI サマリー更新
     const totalWorkMin = totalDriveMin + totalStayMin;
     const workH = Math.floor(totalWorkMin / 60);
     const workM = totalWorkMin % 60;
+    const endTimeStr = formatMinutesToTime(currentMinutes);
+
     document.getElementById("kpiTotalWork").textContent = `${workH} 時間 ${workM} 分`;
-    document.getElementById("kpiEndTime").textContent = formatMinutesToTime(currentMinutes);
+    document.getElementById("kpiEndTime").textContent = `${startTimeStr} → ${endTimeStr}`;
     document.getElementById("kpiDriveInfo").textContent = `${totalDriveMin} 分 / ${totalDistKm.toFixed(1)} km`;
     document.getElementById("kpiToll").textContent = `¥${totalTollYen.toLocaleString()}`;
 
@@ -806,84 +1421,122 @@
     }
 
     document.getElementById("exportBtn").style.display = "inline-flex";
+    document.getElementById("printBtn").style.display = "inline-flex";
+
+  } catch (err) {
+    alert("シミュレーション計算中にエラーが発生しました:\n" + err.message);
+  } finally {
+    calcBtn.disabled = false;
+    calcBtn.textContent = "最適ルート・稼働時間をシミュレーション計算する";
   }
+}
 
-  function formatMinutesToTime(totalMin) {
-    const dayOffset = Math.floor(totalMin / 1440);
-    const minsInDay = totalMin % 1440;
-    const h = String(Math.floor(minsInDay / 60)).padStart(2, "0");
-    const m = String(minsInDay % 60).padStart(2, "0");
-    return dayOffset > 0 ? `${h}:${m} (+${dayOffset}日)` : `${h}:${m}`;
-  }
+function formatMinutesToTime(totalMin) {
+  const dayOffset = Math.floor(totalMin / 1440);
+  const minsInDay = totalMin % 1440;
+  const h = String(Math.floor(minsInDay / 60)).padStart(2, "0");
+  const m = String(minsInDay % 60).padStart(2, "0");
+  return dayOffset > 0 ? `${h}:${m} (+${dayOffset}日)` : `${h}:${m}`;
+}
 
-  // CSV / Excel 読み込み処理
-  function handleFileUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
+// ==========================================
+// ③ A4横1枚レポート印刷 / PDF出力
+// ==========================================
+function printA4Report() {
+  const courseName = document.getElementById("courseNameInput").value.trim() || "配送ルートシミュレーション結果";
+  const runDate = document.getElementById("runDate").value || getTodayString();
+  const vehicleSelect = document.getElementById("vehicleType");
+  const vehicleText = vehicleSelect.options[vehicleSelect.selectedIndex].text;
 
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      try {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: "array" });
-        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(firstSheet);
+  document.getElementById("printCourseTitle").textContent = `運行指示書：${courseName}`;
+  document.getElementById("printMetaInfo").textContent = `運行日付: ${runDate} ｜ 車両区分: ${vehicleText}`;
 
-        if (!rows || rows.length < 2) {
-          alert("有効なデータ行が2行以上見つかりませんでした。サンプルCSVの形式をご確認ください。");
-          return;
-        }
+  // 印刷用レイアウトへサイズ変更される前に地図を再描画・全体フィット調整
+  setTimeout(() => {
+    map.invalidateSize();
+    if (lastBounds) {
+      map.fitBounds(lastBounds, { padding: [20, 20] });
+    }
+    setTimeout(() => {
+      window.print();
+      // 印刷ダイアログ終了後に通常画面サイズへ戻す
+      setTimeout(() => {
+        map.invalidateSize();
+        if (lastBounds) map.fitBounds(lastBounds, { padding: [30, 30] });
+      }, 300);
+    }, 300);
+  }, 100);
+}
 
-        stops = rows.map((row, i) => ({
-          name: String(row["名称"] || row["地点名"] || `地点${i + 1}`),
-          address: String(row["住所"] || ""),
-          stayMin: parseInt(row["滞在時間"] || row["滞在時間(分)"] || "20", 10) || 0,
-          useHighway: ["1", "true", "TRUE", "使用", "高速", "○", "yes"].includes(String(row["高速使用"] || "").trim())
-        }));
+// ==========================================
+// CSV / Excel 入出力
+// ==========================================
+function handleFileUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
 
-        renderStops();
-        runSimulation();
-        alert(`${stops.length}件の地点データを読み込みました。`);
-      } catch (err) {
-        alert("ファイルの読み込みに失敗しました: " + err.message);
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: "array" });
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(firstSheet);
+
+      if (!rows || rows.length < 2) {
+        alert("有効なデータ行が2行以上見つかりませんでした。サンプルCSVの形式をご確認ください。");
+        return;
       }
-      event.target.value = "";
-    };
-    reader.readAsArrayBuffer(file);
-  }
 
-  // サンプルCSVダウンロード
-  function downloadSampleCSV() {
-    const csvContent = "\uFEFF名称,住所,滞在時間,高速使用\n" +
-      "八潮常温センター,埼玉県八潮市大瀬,0,使用\n" +
-      "草加八幡店,埼玉県草加市八幡町,20,不使用\n" +
-      "赤羽台店,東京都北区赤羽台,30,使用\n" +
-      "船橋物流拠点,千葉県船橋市浜町,25,不使用\n";
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "配送ルートサンプル.csv";
-    a.click();
-    URL.revokeObjectURL(url);
-  }
+      stops = rows.map((row, i) => ({
+        name: String(row["名称"] || row["地点名"] || `地点${i + 1}`),
+        address: String(row["住所"] || ""),
+        stayMin: parseInt(row["滞在時間"] || row["滞在時間(分)"] || "20", 10) || 0,
+        useHighway: ["1", "true", "TRUE", "使用", "高速", "o", "yes"].includes(String(row["高速使用"] || "").trim())
+      }));
 
-  // 計算結果CSVダウンロード
-  function exportResultCSV() {
-    if (!lastSimulationRows.length) return;
-    const ws = XLSX.utils.json_to_sheet(lastSimulationRows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "シミュレーション結果");
-    XLSX.writeFile(wb, `配送シミュレーション結果_${document.getElementById("runDate").value}.csv`);
-  }
+      renderStops();
+      runSimulation();
+      alert(`${stops.length}件の地点データを読み込みました。`);
+    } catch (err) {
+      alert("ファイルの読み込みに失敗しました: " + err.message);
+    }
+    event.target.value = "";
+  };
+  reader.readAsArrayBuffer(file);
+}
 
-  function escapeHtml(str) {
-    return String(str)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
-  }
+function downloadSampleCSV() {
+  const csvContent = "\uFEFF名称,住所,滞在時間,高速使用\n" +
+    "八潮常温センター,埼玉県八潮市大瀬,0,使用\n" +
+    "草加八幡店,埼玉県草加市八幡町,20,不使用\n" +
+    "赤羽台店,東京都北区赤羽台,30,使用\n" +
+    "船橋物流拠点,千葉県船橋市浜町,25,不使用\n";
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "配送ルートサンプル.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportResultCSV() {
+  if (!lastSimulationRows.length) return;
+  const courseName = document.getElementById("courseNameInput").value.trim() || "配送シミュレーション結果";
+  const ws = XLSX.utils.json_to_sheet(lastSimulationRows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "シミュレーション結果");
+  XLSX.writeFile(wb, `${courseName}_${document.getElementById("runDate").value}.csv`);
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
 </script>
 </body>
 </html>
