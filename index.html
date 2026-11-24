@@ -6,7 +6,7 @@
 <title>配送ルート・稼働時間シミュレーター</title>
 <!-- Excel / CSV 解析用ライブラリ (SheetJS) -->
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-<!-- 地図表示用ライブラリ (Leaflet - 地図タイル表示用 / ルート計算はRoutes APIを使用) -->
+<!-- 地図表示用ライブラリ (Leaflet) -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
@@ -307,20 +307,158 @@
   }
 
   /* =========================================
-     印刷・PDF出力用スタイル (A4横 1枚収まり)
-     左：コース詳細・時刻表 / 右：全体ルート地図
+     印刷プレビュー準備用＆A4横1枚収まりスタイル
+     左(52%)：コース詳細・時刻表 / 右(48%)：全体ルート地図
      ========================================= */
   .print-only-header { display: none; }
+
+  body.preparing-print header,
+  body.preparing-print #leftInputColumn,
+  body.preparing-print .no-print {
+    display: none !important;
+  }
+  body.preparing-print {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  body.preparing-print .container {
+    display: block !important;
+    width: 280mm !important;
+    max-width: 280mm !important;
+    padding: 0 !important;
+    margin: 0 auto !important;
+  }
+  body.preparing-print #rightResultColumn .card {
+    background: #ffffff !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  body.preparing-print #rightResultColumn .card h2 {
+    display: none !important;
+  }
+  body.preparing-print .print-only-header {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 2px solid #000;
+    padding-bottom: 3px;
+    margin-bottom: 6px;
+  }
+  body.preparing-print .print-only-header h1 {
+    font-size: 13pt;
+    margin: 0;
+    color: #000;
+  }
+  body.preparing-print .print-meta {
+    font-size: 8.5pt;
+    color: #333;
+    text-align: right;
+  }
+  body.preparing-print .print-layout-wrapper {
+    display: grid !important;
+    grid-template-columns: 52% 46%;
+    justify-content: space-between;
+    gap: 8px;
+    align-items: stretch;
+  }
+  body.preparing-print .print-left-details {
+    order: 1;
+    overflow: hidden;
+  }
+  body.preparing-print .print-right-map {
+    order: 2;
+    display: flex;
+    flex-direction: column;
+  }
+  body.preparing-print #map {
+    height: 172mm !important;
+    width: 100% !important;
+    border: 1px solid #475569 !important;
+    border-radius: 4px !important;
+    margin-bottom: 0 !important;
+  }
+  body.preparing-print .kpi-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 4px !important;
+    margin-bottom: 6px !important;
+  }
+  body.preparing-print .kpi-box {
+    background: #f8fafc !important;
+    border: 1px solid #94a3b8 !important;
+    padding: 4px 6px !important;
+    border-radius: 4px !important;
+  }
+  body.preparing-print .kpi-label {
+    color: #475569 !important;
+    font-size: 6.5pt !important;
+    line-height: 1.2;
+  }
+  body.preparing-print .kpi-val {
+    color: #000000 !important;
+    font-size: 9.5pt !important;
+    margin-top: 1px !important;
+  }
+  body.preparing-print #highwaySummaryBox {
+    background: #f8fafc !important;
+    border: 1px solid #94a3b8 !important;
+    color: #000 !important;
+    padding: 4px 6px !important;
+    margin-bottom: 6px !important;
+    font-size: 7pt !important;
+    line-height: 1.3 !important;
+    border-radius: 4px !important;
+  }
+  body.preparing-print #highwaySummaryText {
+    color: #1e293b !important;
+    margin-top: 2px !important;
+  }
+  body.preparing-print table {
+    font-size: 7pt !important;
+    line-height: 1.25 !important;
+    table-layout: fixed;
+    width: 100%;
+  }
+  body.preparing-print th {
+    background: #e2e8f0 !important;
+    color: #000000 !important;
+    font-weight: bold !important;
+    border: 1px solid #94a3b8 !important;
+    padding: 3px 4px !important;
+  }
+  body.preparing-print td {
+    border: 1px solid #cbd5e1 !important;
+    padding: 3px 4px !important;
+    color: #000000 !important;
+    word-wrap: break-word;
+  }
+  body.preparing-print td span {
+    font-size: 6.5pt !important;
+    color: #334155 !important;
+  }
+  body.preparing-print .tag-etc {
+    background: #dbeafe !important;
+    border: 1px solid #2563eb !important;
+    color: #1e40af !important;
+    font-size: 6.2pt !important;
+    padding: 0px 4px !important;
+  }
+  body.preparing-print .tag-local {
+    background: #f1f5f9 !important;
+    border: 1px solid #94a3b8 !important;
+    color: #334155 !important;
+    font-size: 6.2pt !important;
+    padding: 0px 4px !important;
+  }
 
   @media print {
     @page {
       size: A4 landscape;
-      margin: 8mm;
+      margin: 6mm;
     }
     body {
       background: #ffffff !important;
       color: #000000 !important;
-      font-size: 9pt;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
@@ -329,6 +467,7 @@
     }
     .container {
       display: block !important;
+      width: 100% !important;
       max-width: 100% !important;
       padding: 0 !important;
       margin: 0 !important;
@@ -348,25 +487,25 @@
       justify-content: space-between;
       align-items: flex-end;
       border-bottom: 2px solid #000;
-      padding-bottom: 4px;
-      margin-bottom: 8px;
+      padding-bottom: 3px;
+      margin-bottom: 6px;
     }
     .print-only-header h1 {
-      font-size: 14pt;
+      font-size: 13pt;
       margin: 0;
       color: #000;
     }
     .print-meta {
-      font-size: 9pt;
+      font-size: 8.5pt;
       color: #333;
       text-align: right;
     }
-    /* 左右2カラムレイアウト（左：コース説明・タイムライン / 右：全体地図） */
     .print-layout-wrapper {
       display: grid !important;
-      grid-template-columns: 1.25fr 0.75fr;
-      gap: 12px;
-      align-items: start;
+      grid-template-columns: 52% 46%;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: stretch;
     }
     .print-left-details {
       order: 1;
@@ -375,64 +514,83 @@
       order: 2;
     }
     #map {
-      height: 155mm !important;
+      height: 172mm !important;
       width: 100% !important;
-      border: 1px solid #666 !important;
+      border: 1px solid #475569 !important;
+      border-radius: 4px !important;
       margin-bottom: 0 !important;
     }
     .kpi-grid {
       grid-template-columns: repeat(4, 1fr) !important;
-      gap: 6px !important;
-      margin-bottom: 8px !important;
+      gap: 4px !important;
+      margin-bottom: 6px !important;
     }
     .kpi-box {
       background: #f8fafc !important;
       border: 1px solid #94a3b8 !important;
-      padding: 6px 8px !important;
+      padding: 4px 6px !important;
+      border-radius: 4px !important;
     }
     .kpi-label {
       color: #475569 !important;
-      font-size: 7.5pt !important;
+      font-size: 6.5pt !important;
+      line-height: 1.2;
     }
     .kpi-val {
       color: #000000 !important;
-      font-size: 11pt !important;
+      font-size: 9.5pt !important;
+      margin-top: 1px !important;
     }
     #highwaySummaryBox {
       background: #f8fafc !important;
       border: 1px solid #94a3b8 !important;
       color: #000 !important;
-      padding: 6px 8px !important;
-      margin-bottom: 8px !important;
-      font-size: 8pt !important;
+      padding: 4px 6px !important;
+      margin-bottom: 6px !important;
+      font-size: 7pt !important;
+      line-height: 1.3 !important;
+      border-radius: 4px !important;
     }
     #highwaySummaryText {
       color: #1e293b !important;
+      margin-top: 2px !important;
     }
     table {
-      font-size: 8pt !important;
+      font-size: 7pt !important;
+      line-height: 1.25 !important;
+      table-layout: fixed;
+      width: 100%;
     }
     th {
       background: #e2e8f0 !important;
       color: #000000 !important;
       font-weight: bold !important;
       border: 1px solid #94a3b8 !important;
-      padding: 4px 5px !important;
+      padding: 3px 4px !important;
     }
     td {
       border: 1px solid #cbd5e1 !important;
-      padding: 4px 5px !important;
+      padding: 3px 4px !important;
       color: #000000 !important;
+      word-wrap: break-word;
+    }
+    td span {
+      font-size: 6.5pt !important;
+      color: #334155 !important;
     }
     .tag-etc {
       background: #dbeafe !important;
       border: 1px solid #2563eb !important;
       color: #1e40af !important;
+      font-size: 6.2pt !important;
+      padding: 0px 4px !important;
     }
     .tag-local {
       background: #f1f5f9 !important;
       border: 1px solid #94a3b8 !important;
       color: #334155 !important;
+      font-size: 6.2pt !important;
+      padding: 0px 4px !important;
     }
   }
 </style>
@@ -573,7 +731,7 @@
         <span>3. シミュレーション結果</span>
         <div class="flex-row no-print">
           <button class="btn btn-outline btn-sm" id="exportBtn" onclick="exportResultCSV()" style="display:none;">CSV出力</button>
-          <button class="btn btn-primary btn-sm" id="printBtn" onclick="printA4Report()" style="display:none;">🖨️ A4印刷 / PDF保存</button>
+          <button class="btn btn-primary btn-sm" id="printBtn" onclick="printA4Report()" style="display:none;">🖨️ A4横1枚で印刷 / PDF保存</button>
         </div>
       </h2>
 
@@ -581,7 +739,7 @@
       <div class="print-only-header">
         <div>
           <h1 id="printCourseTitle">配送運行指示書・ルートシミュレーション</h1>
-          <div style="font-size:8.5pt; color:#475569;">作成ツール: 配送ルート・稼働時間シミュレーター</div>
+          <div style="font-size:8pt; color:#475569;">作成ツール: 配送ルート・稼働時間シミュレーター</div>
         </div>
         <div class="print-meta" id="printMetaInfo">
           運行日: ----/--/-- | 車両: 中型車
@@ -625,10 +783,10 @@
             <table>
               <thead>
                 <tr>
-                  <th>時刻</th>
-                  <th>地点名 / 住所</th>
-                  <th>滞在</th>
-                  <th>次区間ルート / 高速詳細</th>
+                  <th style="width:18%;">時刻</th>
+                  <th style="width:36%;">地点名 / 住所</th>
+                  <th style="width:10%;">滞在</th>
+                  <th style="width:36%;">次区間ルート / 高速詳細</th>
                 </tr>
               </thead>
               <tbody id="resultTableBody">
@@ -658,7 +816,6 @@ let stops = [
   { name: "横浜港北センター", address: "神奈川県横浜市都筑区川向町", stayMin: 20, useHighway: false }
 ];
 
-// デモ用主要エリア座標辞書
 const geoDict = [
   { key: "八潮", lat: 35.8225, lng: 139.8392, ic: "八潮IC" },
   { key: "草加", lat: 35.8255, lng: 139.8055, ic: "草加IC" },
@@ -682,9 +839,7 @@ const geoDict = [
   { key: "八王子", lat: 35.6664, lng: 139.3160, ic: "八王子IC" }
 ];
 
-// ジオコーディング結果のセッション内キャッシュ（同じ住所の再検索によるAPI消費を節約）
 const geocodeCache = {};
-
 let map, routeLayerGroup;
 let lastSimulationRows = [];
 let lastBounds = null;
@@ -852,7 +1007,7 @@ function saveCurrentCourse() {
     highwayMode: document.getElementById("highwayMode").value,
     stayMode: document.getElementById("stayMode").value,
     uniformStayMin: document.getElementById("uniformStayMin").value,
-    stops: JSON.parse(JSON.stringify(stops)), // ディープコピーで保存
+    stops: JSON.parse(JSON.stringify(stops)),
     updatedAt: new Date().toLocaleString("ja-JP")
   };
 
@@ -1014,7 +1169,6 @@ function renderStops() {
     `;
     container.appendChild(stopDiv);
 
-    // 地点間の高速道路チェックボックス（最終地点以外）
     if (!isLast) {
       const connDiv = document.createElement("div");
       connDiv.className = "segment-connector";
@@ -1084,7 +1238,7 @@ async function geocodeAddressGoogle(address, apiKey) {
   }
   const data = await res.json();
   if (data.status !== "OK" || !data.results || data.results.length === 0) {
-    throw new Error(`住所「${cleanAddr}」の座標取得に失敗しました (${data.status})`);
+    throw new Error(`住所「${cleanAddr}」の座標取得に失敗 (${data.status}): ${data.error_message || ""}`);
   }
 
   const loc = data.results[0].geometry.location;
@@ -1152,7 +1306,6 @@ async function computeRouteGoogle(originPt, destPt, avoidHighways, apiKey) {
   };
 }
 
-// Google Encoded Polyline デコーダ（Leaflet描画用）
 function decodePolyline(encoded) {
   let index = 0, len = encoded.length;
   let lat = 0, lng = 0;
@@ -1183,7 +1336,7 @@ function decodePolyline(encoded) {
 }
 
 // ==========================================
-// デモ用計算エンジン（API未設定・上限到達時用）
+// デモ用計算エンジン
 // ==========================================
 function resolveLocationDemo(address) {
   for (const item of geoDict) {
@@ -1234,7 +1387,6 @@ async function runSimulation() {
     const uniformStay = parseInt(document.getElementById("uniformStayMin").value || "0", 10);
     const vehicleMult = parseFloat(document.getElementById("vehicleType").value || "1.0");
 
-    // 今回の計算で必要なAPI呼び出し回数の見積もり（未キャッシュ住所数 + 区間数）
     const uncachedCount = stops.filter(s => !geocodeCache[s.address.trim()]).length;
     const segmentCount = stops.length - 1;
     const estimatedCalls = uncachedCount + segmentCount;
@@ -1245,7 +1397,6 @@ async function runSimulation() {
       useGoogleApi = false;
     }
 
-    // 1. 各地点の緯度経度解決
     const resolvedPoints = [];
     for (let i = 0; i < stops.length; i++) {
       const s = stops[i];
@@ -1258,7 +1409,6 @@ async function runSimulation() {
       resolvedPoints.push({ ...s, geo });
     }
 
-    // 2. 地図クリア＆マーカー配置
     routeLayerGroup.clearLayers();
     const allCoords = [];
 
@@ -1269,7 +1419,6 @@ async function runSimulation() {
         .bindPopup(`<b>${idx + 1}. ${escapeHtml(pt.name)}</b><br>${escapeHtml(pt.address)}`);
     });
 
-    // 3. 区間ごとのルート・時間・料金計算
     let [startH, startM] = startTimeStr.split(":").map(Number);
     let currentMinutes = startH * 60 + startM;
     let totalDriveMin = 0;
@@ -1297,7 +1446,6 @@ async function runSimulation() {
         const straightKm = calcHaversineKm(pt.geo.lat, pt.geo.lng, nextPt.geo.lat, nextPt.geo.lng);
         const approxRoadKm = Math.max(1.5, Math.round(straightKm * 1.32 * 10) / 10);
 
-        // 高速使用判定
         let useHwy = false;
         if (highwayMode === "auto") {
           useHwy = approxRoadKm >= 22.0;
@@ -1312,14 +1460,12 @@ async function runSimulation() {
         let segCoords = [[pt.geo.lat, pt.geo.lng], [nextPt.geo.lat, nextPt.geo.lng]];
 
         if (useGoogleApi) {
-          // Google Routes API による実ルート計算
           const routeRes = await computeRouteGoogle(pt.geo, nextPt.geo, !useHwy, apiKey);
           roadKm = routeRes.distanceKm;
           driveMin = routeRes.durationMin;
           segCoords = routeRes.coords;
           routeDesc = routeRes.description ? `経由: ${routeRes.description}` : `${pt.geo.ic} → ${nextPt.geo.ic}`;
         } else {
-          // デモエンジンによる計算
           roadKm = approxRoadKm;
           if (useHwy) {
             driveMin = Math.round((roadKm / 62) * 60) + 6;
@@ -1329,7 +1475,6 @@ async function runSimulation() {
           }
         }
 
-        // 高速料金目安の算出（ETC・車種係数反映）
         if (useHwy) {
           const rawToll = 300 + roadKm * 29 * vehicleMult;
           tollYen = Math.round(rawToll / 10) * 10;
@@ -1348,7 +1493,6 @@ async function runSimulation() {
           segExportText = `一般道 ${driveMin}分 ${roadKm}km ¥0`;
         }
 
-        // 区間ポリライン描画（高速は青、一般道は緑系）
         L.polyline(segCoords, {
           color: useHwy ? "#3b82f6" : "#10b981",
           weight: 5,
@@ -1394,13 +1538,11 @@ async function runSimulation() {
       });
     }
 
-    // 地図のズーム範囲を全ルートに合わせる
     if (allCoords.length >= 2) {
       lastBounds = L.latLngBounds(allCoords);
       map.fitBounds(lastBounds, { padding: [30, 30] });
     }
 
-    // KPI サマリー更新
     const totalWorkMin = totalDriveMin + totalStayMin;
     const workH = Math.floor(totalWorkMin / 60);
     const workM = totalWorkMin % 60;
@@ -1440,7 +1582,7 @@ function formatMinutesToTime(totalMin) {
 }
 
 // ==========================================
-// ③ A4横1枚レポート印刷 / PDF出力
+// ③ A4横1枚レポート印刷 / PDF出力（地図自動フィット強化版）
 // ==========================================
 function printA4Report() {
   const courseName = document.getElementById("courseNameInput").value.trim() || "配送ルートシミュレーション結果";
@@ -1451,21 +1593,30 @@ function printA4Report() {
   document.getElementById("printCourseTitle").textContent = `運行指示書：${courseName}`;
   document.getElementById("printMetaInfo").textContent = `運行日付: ${runDate} ｜ 車両区分: ${vehicleText}`;
 
-  // 印刷用レイアウトへサイズ変更される前に地図を再描画・全体フィット調整
+  // 1. 先に画面自体をA4横レイアウト比率に切り替え、地図コンテナのサイズを確定させる
+  document.body.classList.add("preparing-print");
+
+  // 2. Leafletに新しい枠サイズを認識させ、全ルートが枠内に収まるようズーム調整
   setTimeout(() => {
-    map.invalidateSize();
+    map.invalidateSize({ animate: false });
     if (lastBounds) {
-      map.fitBounds(lastBounds, { padding: [20, 20] });
+      map.fitBounds(lastBounds, { padding: [25, 25], animate: false });
     }
+
+    // 3. 地図タイルの読み込み完了を待ってから印刷プレビューを開く
     setTimeout(() => {
       window.print();
-      // 印刷ダイアログ終了後に通常画面サイズへ戻す
+
+      // 4. 印刷終了後に元の画面表示へ戻す
+      document.body.classList.remove("preparing-print");
       setTimeout(() => {
-        map.invalidateSize();
-        if (lastBounds) map.fitBounds(lastBounds, { padding: [30, 30] });
-      }, 300);
-    }, 300);
-  }, 100);
+        map.invalidateSize({ animate: false });
+        if (lastBounds) {
+          map.fitBounds(lastBounds, { padding: [30, 30], animate: false });
+        }
+      }, 200);
+    }, 600);
+  }, 150);
 }
 
 // ==========================================
