@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>配送ルート・稼働時間シミュレーター Ver3.6</title>
+<title>配送ルート・稼働時間シミュレーター Ver3.7</title>
 <!-- Excel / CSV 解析用ライブラリ (SheetJS) -->
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
 <!-- 地図表示用ライブラリ (Leaflet) -->
@@ -247,7 +247,6 @@ input:focus, select:focus {
   display: flex;
   align-items: center;
   gap: 8px;
-  cursor: pointer;
   user-select: none;
 }
 .highway-pill.active {
@@ -255,11 +254,16 @@ input:focus, select:focus {
   border-color: var(--accent);
   color: #6ee7b7;
 }
-.highway-pill input {
-  width: 15px;
-  height: 15px;
-  accent-color: var(--accent);
-  cursor: pointer;
+.highway-pill.force-off {
+  background: rgba(239, 68, 68, 0.14);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #fca5a5;
+}
+.highway-pill select {
+  width: auto;
+  padding: 2px 8px;
+  font-size: 0.78rem;
+  border-radius: 12px;
 }
 
 .kpi-grid {
@@ -442,6 +446,10 @@ th { color: var(--muted); font-weight: normal; }
   font-size: 0.75rem;
   color: #cbd5e1;
 }
+.map-legend-title {
+  font-weight: bold;
+  color: #e2e8f0;
+}
 .map-legend-item {
   display: inline-flex;
   align-items: center;
@@ -519,7 +527,7 @@ th { color: var(--muted); font-weight: normal; }
   font-size: 0.78rem;
 }
 
-/* ====== 印刷・A4横1枚出力スタイル ====== */
+/* ====== 印刷・A4横1枚出力スタイル（全テキスト黒字・高コントラスト化） ====== */
 .print-only-header { display: none; }
 #batchPrintContainer { display: none; }
 
@@ -552,19 +560,20 @@ body.preparing-print .print-only-header {
   display: flex !important;
   justify-content: space-between;
   align-items: flex-end;
-  border-bottom: 2px solid #000;
+  border-bottom: 2px solid #000000;
   padding-bottom: 3px;
   margin-bottom: 6px;
 }
 body.preparing-print .print-only-header h1 {
   font-size: 13pt;
   margin: 0;
-  color: #000;
+  color: #000000 !important;
 }
 body.preparing-print .print-meta {
   font-size: 8.2pt;
-  color: #333;
+  color: #000000 !important;
   text-align: right;
+  font-weight: bold;
 }
 body.preparing-print .print-layout-wrapper {
   display: grid !important;
@@ -575,13 +584,20 @@ body.preparing-print .print-layout-wrapper {
 }
 body.preparing-print .print-left-details { order: 1; overflow: hidden; }
 body.preparing-print .print-right-map { order: 2; display: flex; flex-direction: column; }
-body.preparing-print .map-legend-bar {
+body.preparing-print .map-legend-bar,
+body.preparing-print .map-legend-bar span,
+body.preparing-print .map-legend-title,
+body.preparing-print .map-legend-item {
   background: #f8fafc !important;
-  border: 1px solid #94a3b8 !important;
-  color: #000 !important;
+  border-color: #64748b !important;
+  color: #000000 !important;
+  font-weight: bold !important;
+}
+body.preparing-print .map-legend-bar {
+  border: 1px solid #64748b !important;
   padding: 3px 6px !important;
   margin-bottom: 4px !important;
-  font-size: 6.5pt !important;
+  font-size: 6.8pt !important;
 }
 body.preparing-print #map {
   height: 164mm !important;
@@ -597,20 +613,31 @@ body.preparing-print .kpi-grid {
 }
 body.preparing-print .kpi-box {
   background: #f8fafc !important;
-  border: 1px solid #94a3b8 !important;
+  border: 1px solid #64748b !important;
   padding: 3px 5px !important;
   border-radius: 4px !important;
 }
-body.preparing-print .kpi-label { color: #475569 !important; font-size: 6pt !important; line-height: 1.2; }
-body.preparing-print .kpi-val { color: #000000 !important; font-size: 8.2pt !important; margin-top: 1px !important; }
-body.preparing-print #highwaySummaryBox {
+body.preparing-print .kpi-label { color: #1e293b !important; font-size: 6.2pt !important; line-height: 1.2; font-weight: bold; }
+body.preparing-print .kpi-val,
+body.preparing-print .kpi-val span {
+  color: #000000 !important;
+  font-size: 8.2pt !important;
+  margin-top: 1px !important;
+  font-weight: bold !important;
+}
+body.preparing-print #highwaySummaryBox,
+body.preparing-print #highwaySummaryBox strong,
+body.preparing-print #highwaySummaryBox div,
+body.preparing-print #highwaySummaryBox span {
   background: #f8fafc !important;
-  border: 1px solid #94a3b8 !important;
-  color: #000 !important;
-  padding: 3px 5px !important;
+  color: #000000 !important;
+}
+body.preparing-print #highwaySummaryBox {
+  border: 1px solid #64748b !important;
+  padding: 4px 6px !important;
   margin-bottom: 5px !important;
   font-size: 6.6pt !important;
-  line-height: 1.25 !important;
+  line-height: 1.3 !important;
   border-radius: 4px !important;
 }
 body.preparing-print table {
@@ -623,32 +650,32 @@ body.preparing-print th {
   background: #e2e8f0 !important;
   color: #000000 !important;
   font-weight: bold !important;
-  border: 1px solid #94a3b8 !important;
+  border: 1px solid #64748b !important;
   padding: 2px 3px !important;
 }
 body.preparing-print td {
-  border: 1px solid #cbd5e1 !important;
+  border: 1px solid #94a3b8 !important;
   padding: 2px 3px !important;
   color: #000000 !important;
   word-wrap: break-word;
 }
-body.preparing-print td span { font-size: 5.8pt !important; color: #334155 !important; }
+body.preparing-print td span { font-size: 5.8pt !important; color: #1e293b !important; }
 body.preparing-print .point-symbol-badge {
   min-width: 15px !important;
   height: 15px !important;
   font-size: 5.8pt !important;
   padding: 0 3px !important;
-  border: 1px solid #333 !important;
+  border: 1px solid #000000 !important;
   box-shadow: none !important;
-  color: #fff !important;
+  color: #ffffff !important;
 }
-body.preparing-print .sym-hub { color: #000 !important; }
-body.preparing-print .tag-etc { background: #dbeafe !important; border: 1px solid #2563eb !important; color: #1e40af !important; font-size: 5.6pt !important; padding: 0 3px !important; }
-body.preparing-print .tag-local { background: #f1f5f9 !important; border: 1px solid #94a3b8 !important; color: #334155 !important; font-size: 5.6pt !important; padding: 0 3px !important; }
-body.preparing-print .tag-break { background: #f3e8ff !important; border: 1px solid #7e22ce !important; color: #581c87 !important; font-size: 5.6pt !important; padding: 0 3px !important; }
-body.preparing-print .tag-wait { background: #fef3c7 !important; border: 1px solid #d97706 !important; color: #92400e !important; font-size: 5.6pt !important; padding: 0 3px !important; }
-body.preparing-print .tag-late { background: #fee2e2 !important; border: 1px solid #dc2626 !important; color: #991b1b !important; font-size: 5.6pt !important; padding: 0 3px !important; }
-body.preparing-print .tag-load { background: #d1fae5 !important; border: 1px solid #059669 !important; color: #065f46 !important; font-size: 5.6pt !important; padding: 0 3px !important; }
+body.preparing-print .sym-hub { color: #000000 !important; }
+body.preparing-print .tag-etc { background: #dbeafe !important; border: 1px solid #1d4ed8 !important; color: #000000 !important; font-size: 5.6pt !important; padding: 0 3px !important; font-weight: bold; }
+body.preparing-print .tag-local { background: #f1f5f9 !important; border: 1px solid #64748b !important; color: #000000 !important; font-size: 5.6pt !important; padding: 0 3px !important; }
+body.preparing-print .tag-break { background: #f3e8ff !important; border: 1px solid #6b21a8 !important; color: #000000 !important; font-size: 5.6pt !important; padding: 0 3px !important; font-weight: bold; }
+body.preparing-print .tag-wait { background: #fef3c7 !important; border: 1px solid #b45309 !important; color: #000000 !important; font-size: 5.6pt !important; padding: 0 3px !important; font-weight: bold; }
+body.preparing-print .tag-late { background: #fee2e2 !important; border: 1px solid #b91c1c !important; color: #000000 !important; font-size: 5.6pt !important; padding: 0 3px !important; font-weight: bold; }
+body.preparing-print .tag-load { background: #d1fae5 !important; border: 1px solid #047857 !important; color: #000000 !important; font-size: 5.6pt !important; padding: 0 3px !important; font-weight: bold; }
 
 /* 一括印刷モード */
 body.preparing-batch-print {
@@ -685,19 +712,20 @@ body.preparing-batch-print #batchPrintContainer {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  border-bottom: 2px solid #000;
+  border-bottom: 2px solid #000000;
   padding-bottom: 3px;
   margin-bottom: 6px;
 }
 .batch-header h1 {
   font-size: 13pt;
   margin: 0;
-  color: #000;
+  color: #000000 !important;
 }
 .batch-meta {
   font-size: 8.2pt;
-  color: #333;
+  color: #000000 !important;
   text-align: right;
+  font-weight: bold;
 }
 .batch-grid {
   display: grid;
@@ -719,21 +747,39 @@ body.preparing-batch-print #batchPrintContainer {
 }
 .batch-page .kpi-box {
   background: #f8fafc !important;
-  border: 1px solid #94a3b8 !important;
+  border: 1px solid #64748b !important;
   padding: 3px 5px !important;
   border-radius: 4px !important;
 }
-.batch-page .kpi-label { color: #475569 !important; font-size: 6pt !important; line-height: 1.2; }
-.batch-page .kpi-val { color: #000000 !important; font-size: 8.2pt !important; margin-top: 1px !important; }
-.batch-summary-box {
+.batch-page .kpi-label { color: #1e293b !important; font-size: 6.2pt !important; line-height: 1.2; font-weight: bold; }
+.batch-page .kpi-val,
+.batch-page .kpi-val span {
+  color: #000000 !important;
+  font-size: 8.2pt !important;
+  margin-top: 1px !important;
+  font-weight: bold !important;
+}
+.batch-summary-box,
+.batch-summary-box strong,
+.batch-summary-box div,
+.batch-summary-box span {
   background: #f8fafc !important;
-  border: 1px solid #94a3b8 !important;
-  color: #000 !important;
-  padding: 3px 5px !important;
+  color: #000000 !important;
+}
+.batch-summary-box {
+  border: 1px solid #64748b !important;
+  padding: 4px 6px !important;
   margin-bottom: 5px !important;
   font-size: 6.6pt !important;
-  line-height: 1.25 !important;
+  line-height: 1.3 !important;
   border-radius: 4px !important;
+}
+.batch-page .map-legend-bar,
+.batch-page .map-legend-bar span {
+  background: #f8fafc !important;
+  color: #000000 !important;
+  border-color: #64748b !important;
+  font-weight: bold !important;
 }
 .batch-page table {
   font-size: 6.4pt !important;
@@ -745,32 +791,32 @@ body.preparing-batch-print #batchPrintContainer {
   background: #e2e8f0 !important;
   color: #000000 !important;
   font-weight: bold !important;
-  border: 1px solid #94a3b8 !important;
+  border: 1px solid #64748b !important;
   padding: 2px 3px !important;
 }
 .batch-page td {
-  border: 1px solid #cbd5e1 !important;
+  border: 1px solid #94a3b8 !important;
   padding: 2px 3px !important;
   color: #000000 !important;
   word-wrap: break-word;
 }
-.batch-page td span { font-size: 5.8pt !important; color: #334155 !important; }
+.batch-page td span { font-size: 5.8pt !important; color: #1e293b !important; }
 .batch-page .point-symbol-badge {
   min-width: 15px !important;
   height: 15px !important;
   font-size: 5.8pt !important;
   padding: 0 3px !important;
-  border: 1px solid #333 !important;
+  border: 1px solid #000000 !important;
   box-shadow: none !important;
-  color: #fff !important;
+  color: #ffffff !important;
 }
-.batch-page .sym-hub { color: #000 !important; }
-.batch-page .tag-etc { background: #dbeafe !important; border: 1px solid #2563eb !important; color: #1e40af !important; font-size: 5.6pt !important; padding: 0 3px !important; }
-.batch-page .tag-local { background: #f1f5f9 !important; border: 1px solid #94a3b8 !important; color: #334155 !important; font-size: 5.6pt !important; padding: 0 3px !important; }
-.batch-page .tag-break { background: #f3e8ff !important; border: 1px solid #7e22ce !important; color: #581c87 !important; font-size: 5.6pt !important; padding: 0 3px !important; }
-.batch-page .tag-wait { background: #fef3c7 !important; border: 1px solid #d97706 !important; color: #92400e !important; font-size: 5.6pt !important; padding: 0 3px !important; }
-.batch-page .tag-late { background: #fee2e2 !important; border: 1px solid #dc2626 !important; color: #991b1b !important; font-size: 5.6pt !important; padding: 0 3px !important; }
-.batch-page .tag-load { background: #d1fae5 !important; border: 1px solid #059669 !important; color: #065f46 !important; font-size: 5.6pt !important; padding: 0 3px !important; }
+.batch-page .sym-hub { color: #000000 !important; }
+.batch-page .tag-etc { background: #dbeafe !important; border: 1px solid #1d4ed8 !important; color: #000000 !important; font-size: 5.6pt !important; padding: 0 3px !important; font-weight: bold; }
+.batch-page .tag-local { background: #f1f5f9 !important; border: 1px solid #64748b !important; color: #000000 !important; font-size: 5.6pt !important; padding: 0 3px !important; }
+.batch-page .tag-break { background: #f3e8ff !important; border: 1px solid #6b21a8 !important; color: #000000 !important; font-size: 5.6pt !important; padding: 0 3px !important; font-weight: bold; }
+.batch-page .tag-wait { background: #fef3c7 !important; border: 1px solid #b45309 !important; color: #000000 !important; font-size: 5.6pt !important; padding: 0 3px !important; font-weight: bold; }
+.batch-page .tag-late { background: #fee2e2 !important; border: 1px solid #b91c1c !important; color: #000000 !important; font-size: 5.6pt !important; padding: 0 3px !important; font-weight: bold; }
+.batch-page .tag-load { background: #d1fae5 !important; border: 1px solid #047857 !important; color: #000000 !important; font-size: 5.6pt !important; padding: 0 3px !important; font-weight: bold; }
 
 @media print {
   @page { size: A4 landscape; margin: 6mm; }
@@ -782,7 +828,7 @@ body.preparing-batch-print #batchPrintContainer {
 
 <header>
   <h1>
-    配送ルート・稼働時間シミュレーター <span style="font-size:0.75rem; color:#94a3b8;">Ver3.6</span>
+    配送ルート・稼働時間シミュレーター <span style="font-size:0.75rem; color:#94a3b8;">Ver3.7</span>
     <span class="badge" id="modeBadge">デモシミュレーター稼働中</span>
     <span class="badge-quota" id="quotaBadge">本日 API 利用: 0 / 100 回</span>
   </h1>
@@ -822,10 +868,10 @@ body.preparing-batch-print #batchPrintContainer {
     <!-- ③ 設定マスター -->
     <div class="master-bar">
       <div class="flex-row" style="justify-content: space-between; margin-bottom: 8px;">
-        <span style="font-weight:bold; font-size:0.92rem; color:#7dd3fc;">■ 設定マスター(車格別マテハン上限マトリクス・お任せ配車キー設定)</span>
+        <span style="font-weight:bold; font-size:0.92rem; color:#7dd3fc;">■ 設定マスター(車格別マテハン上限・高速しきい値・お任せ配車キー設定)</span>
         <button class="btn btn-outline btn-sm" onclick="resetMasterSettings()">標準値に戻す</button>
       </div>
-      <div class="grid-3" style="margin-bottom: 10px;">
+      <div class="grid-4" style="margin-bottom: 10px;">
         <div>
           <label>■ 稼働時間限界値(時間 / 例:11, 12)</label>
           <input type="number" id="masterMaxWorkHours" value="12" min="1" max="24" step="0.5" onchange="onMasterParamChange()" />
@@ -837,6 +883,10 @@ body.preparing-batch-print #batchPrintContainer {
         <div>
           <label>■ 運行数上限(最大便数 / 任意設定)</label>
           <input type="number" id="masterMaxTrips" value="3" min="1" max="15" step="1" onchange="onMasterParamChange()" />
+        </div>
+        <div>
+          <label>■ 高速自動判定距離(km以上で使用)</label>
+          <input type="number" id="masterHwyThresholdKm" value="22" min="1" max="500" step="1" onchange="onMasterParamChange()" title="お任せ判定時にこの距離以上なら自動で高速使用" />
         </div>
       </div>
 
@@ -919,7 +969,7 @@ body.preparing-batch-print #batchPrintContainer {
 
       <div class="flex-row" style="justify-content: space-between;">
         <span style="font-size:0.75rem; color:var(--muted);">
-          ※CSVの「コース」「車格」「マテハン種別」「積載上限値」「納品備考」「荷物出来上がり時間」を読み込み、自動配車組みの制約条件に組み込みます。
+          ※CSVの高速欄が<strong>空白</strong>の区間は、お任せモード時に「基準距離以上」または「指定着時間・稼働時間に間に合わせるため必要な区間」として自動判定されます。
         </span>
         <label class="btn btn-purple btn-sm" style="margin:0; cursor:pointer;">
           納品先 CSV/Excel 読込 &amp; 自動コース作成
@@ -991,8 +1041,9 @@ body.preparing-batch-print #batchPrintContainer {
         <div>
           <label>高速道路の使用ルール</label>
           <select id="highwayMode" onchange="renderStops()">
-            <option value="auto">自動 (22km以上の区間で往復とも自動使用)</option>
-            <option value="manual" selected>手動(CSV指定/地点間チェックで指定)</option>
+            <option value="hybrid" selected>ハイブリッドお任せ (指定優先＋空白は距離/時間で自動)</option>
+            <option value="auto">全区間距離ベース自動 (基準km以上で一律使用)</option>
+            <option value="manual">完全手動 (指定された区間のみ使用)</option>
           </select>
         </div>
         <div>
@@ -1097,7 +1148,7 @@ body.preparing-batch-print #batchPrintContainer {
       <div class="print-only-header">
         <div>
           <h1 id="printCourseTitle">配送運行指示書・ルートシミュレーション</h1>
-          <div style="font-size: 8pt; color: #475569;">作成ツール: 配送ルート・稼働時間シミュレーター Ver3.6</div>
+          <div style="font-size: 8pt; color: #000000;">作成ツール: 配送ルート・稼働時間シミュレーター Ver3.7</div>
         </div>
         <div class="print-meta" id="printMetaInfo">
           運行日: ----/--/-- | 車格:4t車(上限22)
@@ -1108,7 +1159,7 @@ body.preparing-batch-print #batchPrintContainer {
         <div class="print-right-map">
           <!-- 地図凡例 -->
           <div class="map-legend-bar">
-            <span style="font-weight:bold; color:#e2e8f0;">地図記号凡例:</span>
+            <span class="map-legend-title">地図記号凡例:</span>
             <span class="map-legend-item"><span class="point-symbol-badge sym-garage">発</span>車庫出発</span>
             <span class="map-legend-item"><span class="point-symbol-badge sym-hub">軸</span>起点(センター)</span>
             <span class="map-legend-item"><span class="point-symbol-badge sym-stop">①</span>納品先(訪問順)</span>
@@ -1170,16 +1221,17 @@ body.preparing-batch-print #batchPrintContainer {
 
 <script>
 const DAILY_API_LIMIT = 100;
-const STORAGE_KEY_API = "wing_gmaps_key_v36";
-const STORAGE_KEY_COURSES = "wing_saved_courses_v36";
-const STORAGE_KEY_QUOTA = "wing_api_quota_v36";
-const STORAGE_KEY_MASTER = "wing_master_settings_v36";
+const STORAGE_KEY_API = "wing_gmaps_key_v37";
+const STORAGE_KEY_COURSES = "wing_saved_courses_v37";
+const STORAGE_KEY_QUOTA = "wing_api_quota_v37";
+const STORAGE_KEY_MASTER = "wing_master_settings_v37";
 
-// 車格×マテハン別積載上限マトリクスの標準値
+// 車格×マテハン別積載上限マトリクスの標準値 + 高速しきい値距離
 const DEFAULT_MASTER = {
   maxWorkHours: 12,
   maxDistKm: 200,
   maxTrips: 3,
+  hwyThresholdKm: 22,
   activeMaterialId: "cart",
   materials: [
     { id: "piece", name: "個数", defaultLimit: 120 },
@@ -1202,11 +1254,12 @@ const DEFAULT_MASTER = {
 
 let masterSettings = loadMasterSettings();
 
+// highwayModePref: "auto" (お任せ/空白), "use" (強制使用), "avoid" (強制不使用)
 let stops = [
-  { name: "八潮常温センター", address: "埼玉県八潮市新町39-2", loadQty: 0, stayMin: 15, targetTime: "", readyTime: "", courseCode: "1コース", vehicleClass: "4t", materialType: "カート", customCap: "", note: "", useHighway: false },
-  { name: "草加八幡店", address: "埼玉県草加市八幡町", loadQty: 12, stayMin: 25, targetTime: "08:30", readyTime: "", courseCode: "1コース", vehicleClass: "4t", materialType: "カート", customCap: "", note: "高さ制限3.8m注意", useHighway: false },
-  { name: "八潮常温センター(折返)", address: "埼玉県八潮市新町39-2", loadQty: 0, stayMin: 20, targetTime: "", readyTime: "10:15", courseCode: "1コース", vehicleClass: "4t", materialType: "カート", customCap: "", note: "2便積込(10:15以降開始)", useHighway: true },
-  { name: "赤羽台店", address: "東京都北区赤羽台", loadQty: 10, stayMin: 30, targetTime: "11:30", readyTime: "", courseCode: "1コース", vehicleClass: "4t", materialType: "カート", customCap: "", note: "4t車まで進入可", useHighway: true }
+  { name: "八潮常温センター", address: "埼玉県八潮市新町39-2", loadQty: 0, stayMin: 15, targetTime: "", readyTime: "", courseCode: "1コース", vehicleClass: "4t", materialType: "カート", customCap: "", note: "", highwayModePref: "auto", useHighway: false },
+  { name: "草加八幡店", address: "埼玉県草加市八幡町", loadQty: 12, stayMin: 25, targetTime: "08:30", readyTime: "", courseCode: "1コース", vehicleClass: "4t", materialType: "カート", customCap: "", note: "高さ制限3.8m注意", highwayModePref: "auto", useHighway: false },
+  { name: "八潮常温センター(折返)", address: "埼玉県八潮市新町39-2", loadQty: 0, stayMin: 20, targetTime: "", readyTime: "10:15", courseCode: "1コース", vehicleClass: "4t", materialType: "カート", customCap: "", note: "2便積込(10:15以降開始)", highwayModePref: "auto", useHighway: true },
+  { name: "赤羽台店", address: "東京都北区赤羽台", loadQty: 10, stayMin: 30, targetTime: "11:30", readyTime: "", courseCode: "1コース", vehicleClass: "4t", materialType: "カート", customCap: "", note: "4t車まで進入可", highwayModePref: "auto", useHighway: true }
 ];
 
 let autoGeneratedCourses = [];
@@ -1358,6 +1411,7 @@ function loadMasterSettings() {
       return {
         ...DEFAULT_MASTER,
         ...parsed,
+        hwyThresholdKm: parsed.hwyThresholdKm !== undefined ? Number(parsed.hwyThresholdKm) : DEFAULT_MASTER.hwyThresholdKm,
         materials: Array.isArray(parsed.materials) && parsed.materials.length > 0 ? parsed.materials : DEFAULT_MASTER.materials,
         vehicles: Array.isArray(parsed.vehicles) && parsed.vehicles.length > 0 ? parsed.vehicles : DEFAULT_MASTER.vehicles,
         garages: Array.isArray(parsed.garages) && parsed.garages.length > 0 ? parsed.garages : DEFAULT_MASTER.garages
@@ -1372,7 +1426,7 @@ function saveMasterSettings() {
 }
 
 function resetMasterSettings() {
-  if (!confirm("設定マスター (稼働時間限界・距離上限・運行数上限・車格別マテハン上限・出着車庫)を標準値に戻しますか?")) return;
+  if (!confirm("設定マスター (稼働時間限界・距離上限・運行数上限・高速しきい値・車格別マテハン上限・出着車庫)を標準値に戻しますか?")) return;
   masterSettings = JSON.parse(JSON.stringify(DEFAULT_MASTER));
   saveMasterSettings();
   renderMasterUI();
@@ -1385,6 +1439,7 @@ function renderMasterUI() {
   document.getElementById("masterMaxWorkHours").value = masterSettings.maxWorkHours;
   document.getElementById("masterMaxDistKm").value = masterSettings.maxDistKm;
   document.getElementById("masterMaxTrips").value = masterSettings.maxTrips;
+  document.getElementById("masterHwyThresholdKm").value = masterSettings.hwyThresholdKm || 22;
 
   const matSelect = document.getElementById("activeMaterialSelect");
   matSelect.innerHTML = "";
@@ -1512,8 +1567,10 @@ function onMasterParamChange() {
   masterSettings.maxWorkHours = Math.max(0.5, parseFloat(document.getElementById("masterMaxWorkHours").value || "12"));
   masterSettings.maxDistKm = Math.max(1, parseFloat(document.getElementById("masterMaxDistKm").value || "200"));
   masterSettings.maxTrips = Math.max(1, parseInt(document.getElementById("masterMaxTrips").value || "3", 10));
+  masterSettings.hwyThresholdKm = Math.max(1, parseFloat(document.getElementById("masterHwyThresholdKm").value || "22"));
   saveMasterSettings();
   updateKpiLabelsFromMaster();
+  renderStops();
 }
 
 function updateKpiLabelsFromMaster() {
@@ -1979,7 +2036,7 @@ function exportCoursesJSON() {
   }
   const exportPayload = {
     app: "Delivery Route Simulator",
-    version: "3.6",
+    version: "3.7",
     exportedAt: new Date().toISOString(),
     master: masterSettings,
     courses
@@ -2042,11 +2099,19 @@ function toggleStayMode() {
   renderStops();
 }
 
+function getStopHighwayPref(stop) {
+  if (stop.highwayModePref === "use" || stop.highwayModePref === "avoid" || stop.highwayModePref === "auto") {
+    return stop.highwayModePref;
+  }
+  return stop.useHighway ? "use" : "auto";
+}
+
 function renderStops() {
   const container = document.getElementById("stopsContainer");
   const highwayMode = document.getElementById("highwayMode").value;
   const stayMode = document.getElementById("stayMode").value;
   const uniformMin = parseInt(document.getElementById("uniformStayMin").value || "0", 10);
+  const thresholdKm = masterSettings.hwyThresholdKm || 22;
   container.innerHTML = "";
 
   const hubNameHint = document.getElementById("hubNameInput")?.value.trim() || "";
@@ -2170,18 +2235,27 @@ function renderStops() {
     if (!isLast) {
       const connDiv = document.createElement("div");
       connDiv.className = "segment-connector";
-      const isChecked = Boolean(stop.useHighway);
-      if (highwayMode === "manual") {
+      const pref = getStopHighwayPref(stop);
+
+      if (highwayMode === "auto") {
         connDiv.innerHTML = `
-          <label class="highway-pill ${isChecked ? "active" : ""}">
-            <input type="checkbox" ${isChecked ? "checked" : ""} onchange="toggleSegmentHighway(${idx}, this.checked)" />
-            <span>高速道路を使用 (${escapeHtml(stop.name || "地点" + (idx + 1))} → 次地点)</span>
-          </label>
+          <div class="highway-pill" style="cursor: default; opacity: 0.9;">
+            <span>高速道路: 全区間距離自動判定 (${thresholdKm}km以上で自動使用)</span>
+          </div>
         `;
       } else {
+        const pillCls = pref === "use" ? "active" : (pref === "avoid" ? "force-off" : "");
+        const autoDesc = highwayMode === "hybrid"
+          ? `お任せ自動 (${thresholdKm}km以上 / 遅延・稼働超過回避)`
+          : "未指定 (一般道)";
         connDiv.innerHTML = `
-          <div class="highway-pill" style="cursor: default; opacity: 0.85;">
-            <span>高速使用: 自動判定モード (22km以上で往復とも自動利用)</span>
+          <div class="highway-pill ${pillCls}">
+            <span>次区間高速 (${escapeHtml(stop.name || "地点" + (idx + 1))} → 次地点):</span>
+            <select onchange="setSegmentHighwayPref(${idx}, this.value)">
+              <option value="auto" ${pref === "auto" ? "selected" : ""}>${autoDesc}</option>
+              <option value="use" ${pref === "use" ? "selected" : ""}>高速を使用する (指定)</option>
+              <option value="avoid" ${pref === "avoid" ? "selected" : ""}>使用しない / 一般道 (指定)</option>
+            </select>
           </div>
         `;
       }
@@ -2203,6 +2277,7 @@ function addStop() {
     materialType: "",
     customCap: "",
     note: "",
+    highwayModePref: "auto",
     useHighway: false
   });
   renderStops();
@@ -2220,8 +2295,9 @@ function moveStop(idx, dir) {
   renderStops();
 }
 
-function toggleSegmentHighway(idx, checked) {
-  stops[idx].useHighway = checked;
+function setSegmentHighwayPref(idx, prefVal) {
+  stops[idx].highwayModePref = prefVal;
+  stops[idx].useHighway = (prefVal === "use");
   renderStops();
 }
 
@@ -2416,7 +2492,7 @@ function evaluateTripLoads(targetStops, hubNameHint, defaultMaxCap) {
 }
 
 // ==========================================
-// コアシミュレーション計算エンジン
+// コアシミュレーション計算エンジン（ハイブリッド高速判定対応）
 // ==========================================
 async function calculateCourseSchedule(targetStops, options) {
   const {
@@ -2432,11 +2508,13 @@ async function calculateCourseSchedule(targetStops, options) {
     apiKey
   } = options;
 
+  const hwyThresholdKm = masterSettings.hwyThresholdKm || 22;
+  const maxWorkMinLimit = (masterSettings.maxWorkHours || 12) * 60;
   const hubNameHint = document.getElementById("hubNameInput").value.trim();
   const hubAddrHint = document.getElementById("hubAddressInput").value.trim() || (targetStops[0] ? targetStops[0].address.trim() : "");
   const loadSummary = evaluateTripLoads(targetStops, hubNameHint, maxCap || 22);
 
-  // 車庫座標の解決（地図表示・連動用）
+  // 車庫座標の解決
   let depGarageGeo = null;
   let retGarageGeo = null;
   if (garage && garage.useDep) {
@@ -2497,44 +2575,108 @@ async function calculateCourseSchedule(targetStops, options) {
     });
   }
 
-  const segments = [];
-  for (let idx = 0; idx < resolvedPoints.length - 1; idx++) {
-    const pt = resolvedPoints[idx];
-    const nextPt = resolvedPoints[idx + 1];
-    const straightKm = calcHaversineKm(pt.geo.lat, pt.geo.lng, nextPt.geo.lat, nextPt.geo.lng);
-    const approxRoadKm = Math.max(1.5, Math.round(straightKm * 1.32 * 10) / 10);
-    const useHwy = (highwayMode === "auto") ? (approxRoadKm >= 22.0) : Boolean(pt.useHighway);
-    let driveMin = 0, roadKm = 0, tollYen = 0, routeDesc = "";
-    let segCoords = [[pt.geo.lat, pt.geo.lng], [nextPt.geo.lat, nextPt.geo.lng]];
-
-    if (useGoogleApi) {
-      const routeRes = await computeRouteGoogle(pt.geo, nextPt.geo, !useHwy, apiKey);
-      roadKm = routeRes.distanceKm;
-      driveMin = routeRes.durationMin;
-      segCoords = routeRes.coords;
-      routeDesc = routeRes.description ? `経由: ${routeRes.description}` : `${pt.geo.ic} → ${nextPt.geo.ic}`;
-    } else {
-      roadKm = approxRoadKm;
-      if (useHwy) {
-        driveMin = Math.round((roadKm / 62) * 60) + 6;
-        routeDesc = `${pt.geo.ic} → ${nextPt.geo.ic}`;
-      } else {
-        driveMin = Math.max(5, Math.round((roadKm / 26) * 60));
-      }
-    }
-
-    if (useHwy) {
-      const rawToll = 300 + roadKm * 29 * vehicleMult;
-      tollYen = Math.round(rawToll / 10) * 10;
-    }
-
-    segments.push({ useHwy, driveMin, roadKm, tollYen, routeDesc, segCoords });
-  }
-
   const [startH, startM] = startTimeStr.split(":").map(Number);
   const initialStartMin = (isNaN(startH) ? 7 : startH) * 60 + (isNaN(startM) ? 0 : startM);
 
-  function simulateTimeline(breakPlanMap) {
+  // 各区間の「一般道候補」と「高速候補」を事前算出するヘルパー
+  const segmentCandidates = [];
+  for (let idx = 0; idx < resolvedPoints.length - 1; idx++) {
+    const pt = resolvedPoints[idx];
+    const nextPt = resolvedPoints[idx + 1];
+    const pref = getStopHighwayPref(pt);
+    const straightKm = calcHaversineKm(pt.geo.lat, pt.geo.lng, nextPt.geo.lat, nextPt.geo.lng);
+    const approxRoadKm = Math.max(1.5, Math.round(straightKm * 1.32 * 10) / 10);
+
+    const buildCandidate = async (isHwy) => {
+      if (useGoogleApi) {
+        const routeRes = await computeRouteGoogle(pt.geo, nextPt.geo, !isHwy, apiKey);
+        const rawToll = isHwy ? (300 + routeRes.distanceKm * 29 * vehicleMult) : 0;
+        return {
+          useHwy: isHwy,
+          roadKm: routeRes.distanceKm,
+          driveMin: routeRes.durationMin,
+          tollYen: Math.round(rawToll / 10) * 10,
+          routeDesc: isHwy
+            ? (routeRes.description ? `経由: ${routeRes.description}` : `${pt.geo.ic} → ${nextPt.geo.ic}`)
+            : "",
+          segCoords: routeRes.coords
+        };
+      } else {
+        const roadKm = approxRoadKm;
+        const driveMin = isHwy
+          ? (Math.round((roadKm / 62) * 60) + 6)
+          : Math.max(5, Math.round((roadKm / 26) * 60));
+        const rawToll = isHwy ? (300 + roadKm * 29 * vehicleMult) : 0;
+        return {
+          useHwy: isHwy,
+          roadKm,
+          driveMin,
+          tollYen: Math.round(rawToll / 10) * 10,
+          routeDesc: isHwy ? `${pt.geo.ic} → ${nextPt.geo.ic}` : "",
+          segCoords: [[pt.geo.lat, pt.geo.lng], [nextPt.geo.lat, nextPt.geo.lng]]
+        };
+      }
+    };
+
+    segmentCandidates.push({
+      idx,
+      pt,
+      nextPt,
+      pref,
+      approxRoadKm,
+      localCand: null,
+      hwyCand: null,
+      getLocal: async function() {
+        if (!this.localCand) this.localCand = await buildCandidate(false);
+        return this.localCand;
+      },
+      getHwy: async function() {
+        if (!this.hwyCand) this.hwyCand = await buildCandidate(true);
+        return this.hwyCand;
+      }
+    });
+  }
+
+  // ステップ1：初期区間セットを決定（距離判定＆明示指定）
+  const segments = [];
+  const autoReasonMap = {}; // idx -> reason string
+
+  for (let idx = 0; idx < segmentCandidates.length; idx++) {
+    const cand = segmentCandidates[idx];
+    let useHwy = false;
+    let reason = "";
+
+    if (highwayMode === "auto") {
+      useHwy = cand.approxRoadKm >= hwyThresholdKm;
+      if (useHwy) reason = `距離自動(${cand.approxRoadKm}km≥${hwyThresholdKm}km)`;
+    } else if (highwayMode === "manual") {
+      useHwy = (cand.pref === "use");
+      if (useHwy) reason = "手動指定";
+    } else {
+      // hybrid（お任せ判定）
+      if (cand.pref === "use") {
+        useHwy = true;
+        reason = "CSV/手動指定";
+      } else if (cand.pref === "avoid") {
+        useHwy = false;
+      } else {
+        // 空白（お任せ）：まず基準距離以上なら高速
+        if (cand.approxRoadKm >= hwyThresholdKm) {
+          useHwy = true;
+          reason = `お任せ距離判定(${cand.approxRoadKm}km≥${hwyThresholdKm}km)`;
+        } else {
+          useHwy = false;
+        }
+      }
+    }
+
+    autoReasonMap[idx] = reason;
+    const chosen = useHwy ? await cand.getHwy() : await cand.getLocal();
+    segments.push({ ...chosen, autoReason: reason });
+  }
+
+  // タイムラインシミュレーション関数
+  function simulateTimeline(breakPlanMap, targetSegs) {
     let curMin = initialStartMin;
     const timelineEvents = [];
     let totalDriveMin = 0;
@@ -2647,7 +2789,7 @@ async function calculateCourseSchedule(targetStops, options) {
       let segExportText = "最終地点到着";
 
       if (idx < resolvedPoints.length - 1) {
-        const seg = segments[idx];
+        const seg = targetSegs[idx];
         const nextPt = resolvedPoints[idx + 1];
         const nextLabel = `${nextPt.pointSymbol}${nextPt.name}`;
         totalDriveMin += seg.driveMin;
@@ -2655,11 +2797,12 @@ async function calculateCourseSchedule(targetStops, options) {
         totalTollYen += seg.tollYen;
 
         if (seg.useHwy) {
+          const reasonTag = seg.autoReason ? ` [${seg.autoReason}]` : "";
           highwayExplanations.push(
-            `区間${idx + 1} (${pt.pointSymbol}${pt.name} → ${nextLabel}): ${seg.routeDesc} (約${seg.roadKm}km / 約¥${seg.tollYen.toLocaleString()})`
+            `区間${idx + 1} (${pt.pointSymbol}${pt.name} → ${nextLabel}): ${seg.routeDesc}${reasonTag} (約${seg.roadKm}km / 約¥${seg.tollYen.toLocaleString()})`
           );
-          segHtml = `<span class="tag-etc">高速 → ${escapeHtml(nextLabel)}</span> <strong>${seg.driveMin}分</strong> (${seg.roadKm}km)<br><span style="font-size:0.72rem; color: #93c5fd;">${escapeHtml(seg.routeDesc)} / ¥${seg.tollYen.toLocaleString()}</span>`;
-          segExportText = `高速(→${nextLabel} / ${seg.routeDesc}) ${seg.driveMin}分 ${seg.roadKm}km ¥${seg.tollYen}`;
+          segHtml = `<span class="tag-etc">高速${escapeHtml(reasonTag)} → ${escapeHtml(nextLabel)}</span> <strong>${seg.driveMin}分</strong> (${seg.roadKm}km)<br><span style="font-size:0.72rem; color: #93c5fd;">${escapeHtml(seg.routeDesc)} / ¥${seg.tollYen.toLocaleString()}</span>`;
+          segExportText = `高速${reasonTag}(→${nextLabel} / ${seg.routeDesc}) ${seg.driveMin}分 ${seg.roadKm}km ¥${seg.tollYen}`;
         } else {
           segHtml = `<span class="tag-local">一般道 → ${escapeHtml(nextLabel)}</span> <strong>${seg.driveMin}分</strong> (${seg.roadKm}km)`;
           segExportText = `一般道(→${nextLabel}) ${seg.driveMin}分 ${seg.roadKm}km ¥0`;
@@ -2693,12 +2836,13 @@ async function calculateCourseSchedule(targetStops, options) {
         readyTimeText,
         statusTag,
         isLate,
+        lateDiff,
         segHtml,
         segExportText
       });
 
       if (idx < resolvedPoints.length - 1) {
-        curMin = depMin + segments[idx].driveMin;
+        curMin = depMin + targetSegs[idx].driveMin;
       } else {
         curMin = depMin;
       }
@@ -2743,7 +2887,7 @@ async function calculateCourseSchedule(targetStops, options) {
       resolvedPoints,
       depGarageGeo,
       retGarageGeo,
-      segments,
+      segments: targetSegs,
       timelineEvents,
       initialStartMin,
       finalEndMin: curMin,
@@ -2763,70 +2907,146 @@ async function calculateCourseSchedule(targetStops, options) {
     };
   }
 
-  const baseResult = simulateTimeline({});
-  if (breakRuleMode === "auto60") {
-    const breakPlan = {};
-    let remainingBreak = 60;
+  function runWithAutoBreak(targetSegs) {
+    const baseResult = simulateTimeline({}, targetSegs);
+    if (breakRuleMode === "auto60") {
+      const breakPlan = {};
+      let remainingBreak = 60;
 
-    for (const ev of baseResult.timelineEvents) {
-      if (ev.type === "stop" && ev.waitMin >= 30 && remainingBreak >= 30) {
-        const alloc = (ev.waitMin >= 60 && remainingBreak >= 60) ? 60 : 30;
-        breakPlan[ev.index] = { preBreakMin: alloc, postBreakMin: 0 };
-        remainingBreak -= alloc;
+      for (const ev of baseResult.timelineEvents) {
+        if (ev.type === "stop" && ev.waitMin >= 30 && remainingBreak >= 30) {
+          const alloc = (ev.waitMin >= 60 && remainingBreak >= 60) ? 60 : 30;
+          breakPlan[ev.index] = { preBreakMin: alloc, postBreakMin: 0 };
+          remainingBreak -= alloc;
+        }
       }
-    }
 
-    const stopEvents = baseResult.timelineEvents.filter(e => e.type === "stop");
-    if (remainingBreak > 0 && stopEvents.length > 0) {
-      const midTime1 = initialStartMin + Math.floor(baseResult.totalRestraintMin * 0.38);
-      const midTime2 = initialStartMin + Math.floor(baseResult.totalRestraintMin * 0.68);
-      const findBestStopIdx = (targetMidMin, excludeIdx = -1) => {
-        let bestIdx = 0;
-        let bestScore = Infinity;
-        stopEvents.forEach(ev => {
-          if (ev.index === excludeIdx) return;
-          let score = Math.abs(ev.depMin - targetMidMin);
-          if (ev.index === 0 && ev.stayMin === 0) score += 180;
-          if (ev.name.includes("センター") || ev.name.includes("拠点") || ev.name.includes("折返")) {
-            score -= 45;
-          }
-          if (score < bestScore) {
-            bestScore = score;
-            bestIdx = ev.index;
-          }
-        });
-        return bestIdx;
-      };
+      const stopEvents = baseResult.timelineEvents.filter(e => e.type === "stop");
+      if (remainingBreak > 0 && stopEvents.length > 0) {
+        const midTime1 = initialStartMin + Math.floor(baseResult.totalRestraintMin * 0.38);
+        const midTime2 = initialStartMin + Math.floor(baseResult.totalRestraintMin * 0.68);
+        const findBestStopIdx = (targetMidMin, excludeIdx = -1) => {
+          let bestIdx = 0;
+          let bestScore = Infinity;
+          stopEvents.forEach(ev => {
+            if (ev.index === excludeIdx) return;
+            let score = Math.abs(ev.depMin - targetMidMin);
+            if (ev.index === 0 && ev.stayMin === 0) score += 180;
+            if (ev.name.includes("センター") || ev.name.includes("拠点") || ev.name.includes("折返")) {
+              score -= 45;
+            }
+            if (score < bestScore) {
+              bestScore = score;
+              bestIdx = ev.index;
+            }
+          });
+          return bestIdx;
+        };
 
-      if (remainingBreak === 60) {
-        if (stopEvents.length >= 3) {
-          const idx1 = findBestStopIdx(midTime1);
-          const idx2 = findBestStopIdx(midTime2, idx1);
+        if (remainingBreak === 60) {
+          if (stopEvents.length >= 3) {
+            const idx1 = findBestStopIdx(midTime1);
+            const idx2 = findBestStopIdx(midTime2, idx1);
+            breakPlan[idx1] = breakPlan[idx1] || { preBreakMin: 0, postBreakMin: 0 };
+            breakPlan[idx1].postBreakMin += 30;
+            breakPlan[idx2] = breakPlan[idx2] || { preBreakMin: 0, postBreakMin: 0 };
+            breakPlan[idx2].postBreakMin += 30;
+          } else {
+            const idx1 = findBestStopIdx(midTime1);
+            breakPlan[idx1] = breakPlan[idx1] || { preBreakMin: 0, postBreakMin: 0 };
+            breakPlan[idx1].postBreakMin += 60;
+          }
+        } else if (remainingBreak === 30) {
+          const idx1 = findBestStopIdx(midTime2);
           breakPlan[idx1] = breakPlan[idx1] || { preBreakMin: 0, postBreakMin: 0 };
           breakPlan[idx1].postBreakMin += 30;
-          breakPlan[idx2] = breakPlan[idx2] || { preBreakMin: 0, postBreakMin: 0 };
-          breakPlan[idx2].postBreakMin += 30;
-        } else {
-          const idx1 = findBestStopIdx(midTime1);
-          breakPlan[idx1] = breakPlan[idx1] || { preBreakMin: 0, postBreakMin: 0 };
-          breakPlan[idx1].postBreakMin += 60;
         }
-      } else if (remainingBreak === 30) {
-        const idx1 = findBestStopIdx(midTime2);
-        breakPlan[idx1] = breakPlan[idx1] || { preBreakMin: 0, postBreakMin: 0 };
-        breakPlan[idx1].postBreakMin += 30;
+      }
+      return simulateTimeline(breakPlan, targetSegs);
+    }
+    return baseResult;
+  }
+
+  let currentSim = runWithAutoBreak(segments);
+
+  // ステップ2：ハイブリッドお任せモード時の「時間枠遅延回避＆稼働上限回避」自動最適化
+  if (highwayMode === "hybrid") {
+    // (A) 指定着時間(±30分)の遅延が発生している場合、その手前の「お任せ(auto)」区間を高速化して間に合うなら採用
+    for (let safety = 0; safety < segmentCandidates.length; safety++) {
+      const lateEv = currentSim.timelineEvents.find(e => e.type === "stop" && e.isLate);
+      if (!lateEv) break;
+
+      let upgraded = false;
+      // 遅延地点より手前の区間から最も短縮効果が高いお任せ区間を探す
+      let bestCandIdx = -1;
+      let bestSavedMin = 0;
+
+      for (let k = lateEv.index - 1; k >= 0; k--) {
+        const cand = segmentCandidates[k];
+        if (cand.pref === "auto" && !segments[k].useHwy) {
+          const hwyC = await cand.getHwy();
+          const saved = segments[k].driveMin - hwyC.driveMin;
+          if (saved > bestSavedMin) {
+            bestSavedMin = saved;
+            bestCandIdx = k;
+          }
+        }
+      }
+
+      if (bestCandIdx >= 0 && bestSavedMin >= 2) {
+        const cand = segmentCandidates[bestCandIdx];
+        const hwyC = await cand.getHwy();
+        const backupSeg = segments[bestCandIdx];
+        segments[bestCandIdx] = { ...hwyC, autoReason: "お任せ時間枠遅延回避" };
+        const nextSim = runWithAutoBreak(segments);
+
+        // 遅延件数が減るか、該当遅延の遅れ分が縮まれば確定
+        const nextLateEv = nextSim.timelineEvents.find(e => e.type === "stop" && e.index === lateEv.index);
+        if (nextSim.lateCount < currentSim.lateCount || (nextLateEv && nextLateEv.lateDiff < lateEv.lateDiff)) {
+          currentSim = nextSim;
+          upgraded = true;
+        } else {
+          segments[bestCandIdx] = backupSeg;
+        }
+      }
+      if (!upgraded) break;
+    }
+
+    // (B) 総拘束時間がマスター稼働上限を超過している場合、短縮効果が大きいお任せ区間から高速化して上限内に収める
+    while (currentSim.totalRestraintMin > maxWorkMinLimit) {
+      let bestCandIdx = -1;
+      let bestSavedMin = 0;
+
+      for (let k = 0; k < segmentCandidates.length; k++) {
+        const cand = segmentCandidates[k];
+        if (cand.pref === "auto" && !segments[k].useHwy) {
+          const hwyC = await cand.getHwy();
+          const saved = segments[k].driveMin - hwyC.driveMin;
+          if (saved > bestSavedMin) {
+            bestSavedMin = saved;
+            bestCandIdx = k;
+          }
+        }
+      }
+
+      if (bestCandIdx >= 0 && bestSavedMin >= 3) {
+        const cand = segmentCandidates[bestCandIdx];
+        const hwyC = await cand.getHwy();
+        segments[bestCandIdx] = { ...hwyC, autoReason: "お任せ稼働上限回避" };
+        currentSim = runWithAutoBreak(segments);
+      } else {
+        break;
       }
     }
-    return simulateTimeline(breakPlan);
   }
-  return baseResult;
+
+  return currentSim;
 }
 
 // ==========================================
 // 地図上のマーカー・動線描画ヘルパー（画面＆一括印刷共通）
 // ==========================================
 function plotMarkersAndRoutesOnMap(targetMapLayer, simResult, garage, collectCoordsArr, interactivePopups = true) {
-  // 1. 出庫・帰庫車庫マーカーの描画（同一座標なら「発/着」で統合）
   const hasDep = Boolean(garage && garage.useDep && simResult.depGarageGeo);
   const hasRet = Boolean(garage && garage.useRet && simResult.retGarageGeo);
 
@@ -2883,7 +3103,6 @@ function plotMarkersAndRoutesOnMap(targetMapLayer, simResult, garage, collectCoo
     }
   }
 
-  // 出庫→起点、最終地点→帰庫の補助線（点線）
   if (hasDep && simResult.resolvedPoints.length > 0) {
     const firstPt = simResult.resolvedPoints[0];
     L.polyline(
@@ -2899,7 +3118,6 @@ function plotMarkersAndRoutesOnMap(targetMapLayer, simResult, garage, collectCoo
     ).addTo(targetMapLayer);
   }
 
-  // 2. 起点（「軸」）と各納品先（「①」「②」...）の描画（同一座標の「軸」は重複重なりを統合）
   const drawnHubKeys = new Set();
   simResult.resolvedPoints.forEach((pt, idx) => {
     collectCoordsArr.push([pt.geo.lat, pt.geo.lng]);
@@ -2935,7 +3153,6 @@ function plotMarkersAndRoutesOnMap(targetMapLayer, simResult, garage, collectCoo
     }
   });
 
-  // 3. 区間ルートポリライン描画
   simResult.segments.forEach(seg => {
     L.polyline(seg.segCoords, {
       color: seg.useHwy ? "#3b82f6" : "#10b981",
@@ -3074,7 +3291,6 @@ function buildSummaryHtml(simResult, vehicleSettings) {
     `休憩合計: <strong>${simResult.totalBreakMin}分</strong> / 待機合計: <strong>${simResult.totalWaitMin}分</strong> (内出来上がり待機: ${simResult.totalReadyWaitMin}分)`
   );
 
-  // 地点記号対応表サマリー
   const routeChain = simResult.timelineEvents.map(ev => `${ev.pointSymbol}${ev.name}`).join(" → ");
   summaryLines.push(`ルート順: <span style="color:#bae6fd;">${escapeHtml(routeChain)}</span>`);
 
@@ -3115,7 +3331,7 @@ async function runSimulation(forceDemoMode = false) {
 
     const uncachedCount = stops.filter(s => !geocodeCache[s.address.trim()]).length;
     const segmentCount = stops.length - 1;
-    const estimatedCalls = uncachedCount + segmentCount;
+    const estimatedCalls = uncachedCount + segmentCount * 2;
     let useGoogleApi = !forceDemoMode && Boolean(apiKey);
 
     if (useGoogleApi && !canUseGoogleApi(estimatedCalls)) {
@@ -3255,22 +3471,31 @@ function downloadBlankFormatCSV() {
 
 function downloadSampleCSV() {
   const csvContent = "\uFEFF納品先名称,住所,荷量,滞在時間_分,指定着時間,行き高速,帰り高速,コース,車格,マテハン種別,積載上限値,納品備考,荷物出来上がり時間\n" +
-    "草加八幡店,埼玉県草加市八幡町,10,20,08:30,不使用,不使用,1コース,4t,カート,22,高さ3.8m注意,\n" +
-    "赤羽台店,東京都北区赤羽台,11,25,10:00,不使用,使用,1コース,4t,カート,22,4t車まで可,\n" +
-    "船橋物流拠点,千葉県船橋市浜町,8,25,13:00,使用,不使用,2コース,4t,カゴ車,14,カゴ車納品・12:15出来上がり,12:15\n" +
-    "柏の葉ストア,千葉県柏市若柴,5,20,14:30,不使用,使用,2コース,4t,カゴ車,14,,\n" +
-    "川崎臨海センター,神奈川県川崎市川崎区東扇島,7,30,17:00,使用,使用,,3t,カゴ車,,3t車制限あり,\n";
+    "草加八幡店,埼玉県草加市八幡町,10,20,08:30,,,1コース,4t,カート,22,高さ3.8m注意,\n" +
+    "赤羽台店,東京都北区赤羽台,11,25,10:00,,,1コース,4t,カート,22,4t車まで可,\n" +
+    "船橋物流拠点,千葉県船橋市浜町,8,25,13:00,,,2コース,4t,カゴ車,14,カゴ車納品・12:15出来上がり,12:15\n" +
+    "柏の葉ストア,千葉県柏市若柴,5,20,14:30,,,2コース,4t,カゴ車,14,,\n" +
+    "川崎臨海センター,神奈川県川崎市川崎区東扇島,7,30,17:00,,,3コース,3t,カゴ車,,3t車制限あり,\n";
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "配送先一括サンプル_車格マテハン上限対応.csv";
+  a.download = "配送先一括サンプル_高速お任せ対応.csv";
   a.click();
   URL.revokeObjectURL(url);
 }
 
-function isHighwayFlagTrue(val) {
-  return ["1", "true", "TRUE", "使用", "高速", "○", "o", "yes", "往復"].includes(String(val || "").trim());
+// CSVの高速欄を「use（使用）」「avoid（不使用）」「auto（空白＝お任せ）」に3値解析
+function parseHighwayCellPref(val) {
+  const s = String(val === undefined || val === null ? "" : val).trim();
+  if (!s) return "auto";
+  if (["1", "true", "TRUE", "使用", "高速", "○", "o", "yes", "往復", "有", "あり"].includes(s)) {
+    return "use";
+  }
+  if (["0", "false", "FALSE", "不使用", "一般", "一般道", "×", "x", "no", "無", "なし"].includes(s)) {
+    return "avoid";
+  }
+  return "auto";
 }
 
 function buildStopsFromTrips(hubName, hubAddress, trips) {
@@ -3279,6 +3504,7 @@ function buildStopsFromTrips(hubName, hubAddress, trips) {
     const tripTotalLoad = tripDeliveries.reduce((sum, d) => sum + (d.loadQty || 0), 0);
     const firstDel = tripDeliveries[0] || {};
     const earliestReady = tripDeliveries.map(d => d.readyTime).filter(Boolean).sort()[0] || "";
+    const outPref = firstDel.highwayPrefOut || "auto";
 
     built.push({
       name: tIdx === 0 ? `${hubName} (1便出発 / 積載${tripTotalLoad})` : `${hubName} (${tIdx + 1}便積込 / 積載${tripTotalLoad})`,
@@ -3292,14 +3518,15 @@ function buildStopsFromTrips(hubName, hubAddress, trips) {
       materialType: firstDel.materialType || "",
       customCap: firstDel.resolvedCap || "",
       note: earliestReady ? `荷物出来上がり ${earliestReady} 以降積込` : "",
-      useHighway: Boolean(firstDel.useHighwayOut)
+      highwayModePref: outPref,
+      useHighway: outPref === "use"
     });
 
     tripDeliveries.forEach((del, dIdx) => {
       const isLastInTrip = (dIdx === tripDeliveries.length - 1);
-      const nextUseHwy = !isLastInTrip
-        ? Boolean(tripDeliveries[dIdx + 1].useHighwayOut)
-        : Boolean(del.useHighwayBack);
+      const nextPref = !isLastInTrip
+        ? (tripDeliveries[dIdx + 1].highwayPrefOut || "auto")
+        : (del.highwayPrefBack || "auto");
       built.push({
         name: del.name,
         address: del.address,
@@ -3312,7 +3539,8 @@ function buildStopsFromTrips(hubName, hubAddress, trips) {
         materialType: del.materialType || "",
         customCap: del.resolvedCap || "",
         note: del.note || "",
-        useHighway: nextUseHwy
+        highwayModePref: nextPref,
+        useHighway: nextPref === "use"
       });
     });
   });
@@ -3329,6 +3557,7 @@ function buildStopsFromTrips(hubName, hubAddress, trips) {
     materialType: "",
     customCap: "",
     note: "",
+    highwayModePref: "auto",
     useHighway: false
   });
   return built;
@@ -3355,9 +3584,10 @@ async function handleAutoCourseCSV(event) {
       const deliveries = rows
         .filter(r => (r["納品先名称"] || r["名称"] || r["地点名"]) && r["住所"])
         .map((row, i) => {
-          const legacyHwy = row["高速使用"] !== undefined ? isHighwayFlagTrue(row["高速使用"]) : false;
-          const outHwy = row["行き高速"] !== undefined ? isHighwayFlagTrue(row["行き高速"]) : legacyHwy;
-          const backHwy = row["帰り高速"] !== undefined ? isHighwayFlagTrue(row["帰り高速"]) : legacyHwy;
+          const legacyPref = row["高速使用"] !== undefined ? parseHighwayCellPref(row["高速使用"]) : "auto";
+          const outPref = row["行き高速"] !== undefined ? parseHighwayCellPref(row["行き高速"]) : legacyPref;
+          const backPref = row["帰り高速"] !== undefined ? parseHighwayCellPref(row["帰り高速"]) : legacyPref;
+
           const rawVeh = String(row["車格"] || "").trim();
           const rawMat = String(row["マテハン種別"] || row["マテハン"] || "").trim();
           const rawCap = row["積載上限値"] !== undefined && row["積載上限値"] !== ""
@@ -3382,8 +3612,8 @@ async function handleAutoCourseCSV(event) {
             materialId: resolvedMat.id,
             resolvedCap,
             note: String(row["納品備考"] || row["備考"] || "").trim(),
-            useHighwayOut: outHwy,
-            useHighwayBack: backHwy
+            highwayPrefOut: outPref,
+            highwayPrefBack: backPref
           };
         });
 
@@ -3524,7 +3754,7 @@ async function handleAutoCourseCSV(event) {
       if (autoGeneratedCourses.length > 0) {
         applyGeneratedCourse(0, true);
       }
-      alert(`全${deliveries.length}件から、コース指定・車格別マテハン上限・上限${masterSettings.maxWorkHours}h・上限${masterSettings.maxDistKm}km・最大${maxTripsLimit}運行・出来上がり時間待機を考慮し【${autoGeneratedCourses.length}コース】を自動編成しました。`);
+      alert(`全${deliveries.length}件から、コース指定・車格別マテハン上限・上限${masterSettings.maxWorkHours}h・上限${masterSettings.maxDistKm}km・最大${maxTripsLimit}運行・高速お任せ判定(距離＋時間)・出来上がり時間待機を考慮し【${autoGeneratedCourses.length}コース】を自動編成しました。`);
     } catch (err) {
       alert("自動コース組みエラー: " + err.message);
     }
@@ -3567,11 +3797,12 @@ function renderGeneratedCoursesUI() {
     const tripSummary = c.trips.map((t, tIdx) => {
       const tLoad = t.reduce((s, d) => s + d.loadQty, 0);
       const dNames = t.map(d => {
-        const hwyMark = (d.useHighwayOut || d.useHighwayBack)
-          ? `[高:${d.useHighwayOut ? "往" : ""}${d.useHighwayBack ? "復" : ""}]`
-          : "";
+        const outMark = d.highwayPrefOut === "use" ? "往:高" : (d.highwayPrefOut === "avoid" ? "往:一般" : "");
+        const backMark = d.highwayPrefBack === "use" ? "復:高" : (d.highwayPrefBack === "avoid" ? "復:一般" : "");
+        const hwyMarks = [outMark, backMark].filter(Boolean).join("/");
+        const hwyTag = hwyMarks ? `[${hwyMarks}]` : "";
         const readyMark = d.readyTime ? `[出来:${d.readyTime}]` : "";
-        return `${d.name}${hwyMark}${readyMark}`;
+        return `${d.name}${hwyTag}${readyMark}`;
       }).join(" → ");
       return `${tIdx + 1}便[${dNames} (荷${tLoad})]`;
     }).join(" / ");
@@ -3615,7 +3846,7 @@ async function calculateSingleGeneratedCourseWithApi(idx) {
     return alert("Google Maps APIキーが設定されていません。「Google Maps API キー設定」からキーを保存してください。");
   }
   const uncached = course.stops.filter(s => !geocodeCache[s.address.trim()]).length;
-  const estimatedCalls = uncached + Math.max(0, course.stops.length - 1);
+  const estimatedCalls = uncached + Math.max(0, course.stops.length - 1) * 2;
   if (!canUseGoogleApi(estimatedCalls)) {
     return alert(`本日のGoogle API 利用上限(${DAILY_API_LIMIT} 回)に達するため実行できません(本日残枠: ${DAILY_API_LIMIT - getQuotaData().count}回)。`);
   }
@@ -3685,11 +3916,11 @@ async function calculateAllGeneratedCoursesWithApi() {
   let estimatedTotalCalls = 0;
   autoGeneratedCourses.forEach(c => {
     const uncached = c.stops.filter(s => !geocodeCache[s.address.trim()]).length;
-    estimatedTotalCalls += uncached + Math.max(0, c.stops.length - 1);
+    estimatedTotalCalls += uncached + Math.max(0, c.stops.length - 1) * 2;
   });
 
   if (!canUseGoogleApi(estimatedTotalCalls)) {
-    if (!confirm(`全コースのAPI計算で推定 ${estimatedTotalCalls} 回のAPIを消費します(本日残枠:${DAILY_API_LIMIT - getQuotaData().count}回)。実行しますか?`)) {
+    if (!confirm(`全コースのAPI計算で最大 ${estimatedTotalCalls} 回のAPIを消費する可能性があります(本日残枠:${DAILY_API_LIMIT - getQuotaData().count}回)。実行しますか?`)) {
       return;
     }
   }
@@ -3829,7 +4060,7 @@ async function printAllGeneratedCourses() {
         <div class="batch-header">
           <div>
             <h1>運行指示書: ${escapeHtml(course.courseTitle)} (${i + 1} / ${autoGeneratedCourses.length}) ${simResult.usedGoogleApi ? "[API動線反映]" : ""}</h1>
-            <div style="font-size: 7.8pt; color: #475569;">作成ツール: 配送ルート・稼働時間シミュレーター Ver3.6</div>
+            <div style="font-size: 7.8pt; color: #000000;">作成ツール: 配送ルート・稼働時間シミュレーター Ver3.7</div>
           </div>
           <div class="batch-meta">
             運行日付: ${runDate} | 車格: ${vehicleSettings.label} (${vehicleSettings.materialName}上限${vehicleSettings.maxCap}) | 稼働上限:${masterSettings.maxWorkHours}h / 距離上限:${masterSettings.maxDistKm}km
@@ -3857,7 +4088,7 @@ async function printAllGeneratedCourses() {
             </div>
             <div class="batch-summary-box">
               <strong>運行・積載・高速・休憩・備考サマリー:</strong>
-              <div style="margin-top:1px; color: #1e293b;">${summaryHtml}</div>
+              <div style="margin-top:1px;">${summaryHtml}</div>
             </div>
             <table>
               <thead>
@@ -3874,8 +4105,8 @@ async function printAllGeneratedCourses() {
             </table>
           </div>
           <div>
-            <div class="map-legend-bar" style="background:#f8fafc; border-color:#94a3b8; color:#000; padding:3px 6px; margin-bottom:4px; font-size:6.5pt;">
-              <span><strong>記号:</strong> [発]車庫出発 / [軸]起点 / [①②…]納品先 / [着]車庫到着</span>
+            <div class="map-legend-bar" style="padding:3px 6px; margin-bottom:4px; font-size:6.8pt;">
+              <span><strong>地図記号凡例:</strong> [発]車庫出発 / [軸]起点 / [①②…]納品先 / [着]車庫到着</span>
             </div>
             <div id="batchMap_${i}" class="batch-map"></div>
           </div>
@@ -3977,6 +4208,8 @@ function handleFileUpload(event) {
       stops = rows.map((row, i) => {
         const rawVeh = String(row["車格"] || "").trim();
         const resolvedVeh = rawVeh ? resolveVehicleByNameOrId(rawVeh).id : "";
+        const rawHwyCell = row["高速使用"] !== undefined ? row["高速使用"] : row["行き高速"];
+        const pref = parseHighwayCellPref(rawHwyCell);
         return {
           name: String(row["納品先名称"] || row["名称"] || row["地点名"] || `地点${i + 1}`).trim(),
           address: String(row["住所"] || "").trim(),
@@ -3989,7 +4222,8 @@ function handleFileUpload(event) {
           materialType: String(row["マテハン種別"] || row["マテハン"] || "").trim(),
           customCap: row["積載上限値"] !== undefined && row["積載上限値"] !== "" ? String(row["積載上限値"]) : "",
           note: String(row["納品備考"] || row["備考"] || "").trim(),
-          useHighway: isHighwayFlagTrue(row["高速使用"] !== undefined ? row["高速使用"] : row["行き高速"])
+          highwayModePref: pref,
+          useHighway: pref === "use"
         };
       });
 
