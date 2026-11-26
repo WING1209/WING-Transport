@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>配送ルート・稼働時間シミュレーター Ver3.3</title>
+<title>配送ルート・稼働時間シミュレーター Ver3.4</title>
 <!-- Excel / CSV 解析用ライブラリ (SheetJS) -->
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
 <!-- 地図表示用ライブラリ (Leaflet) -->
@@ -67,11 +67,11 @@ header h1 {
   border: 1px solid var(--border);
 }
 .container {
-  max-width: 1540px;
+  max-width: 1560px;
   margin: 0 auto;
   padding: 20px;
   display: grid;
-  grid-template-columns: 1.22fr 0.78fr;
+  grid-template-columns: 1.24fr 0.76fr;
   gap: 20px;
 }
 @media (max-width: 1120px) {
@@ -210,11 +210,11 @@ input:focus, select:focus {
 }
 .stop-fields-sub {
   display: grid;
-  grid-template-columns: 0.9fr 0.9fr 96px 1.4fr;
+  grid-template-columns: 0.8fr 0.85fr 0.85fr 76px 96px 1.2fr;
   gap: 7px;
   margin-top: 7px;
 }
-@media (max-width: 820px) {
+@media (max-width: 900px) {
   .stop-fields, .stop-fields-sub { grid-template-columns: 1fr 1fr; }
 }
 
@@ -291,6 +291,24 @@ th, td {
   vertical-align: top;
 }
 th { color: var(--muted); font-weight: normal; }
+
+.master-matrix-table th, .master-matrix-table td {
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  padding: 5px 6px;
+  text-align: center;
+  vertical-align: middle;
+}
+.master-matrix-table th {
+  background: rgba(15, 23, 42, 0.75);
+  color: #bae6fd;
+  font-weight: bold;
+  font-size: 0.75rem;
+}
+.master-matrix-table input[type="number"] {
+  padding: 4px 6px;
+  font-size: 0.82rem;
+  text-align: right;
+}
 
 .tag-etc {
   display: inline-block;
@@ -660,7 +678,7 @@ body.preparing-batch-print #batchPrintContainer {
 <body>
 <header>
   <h1>
-    配送ルート・稼働時間シミュレーター <span style="font-size:0.75rem; color:#94a3b8;">Ver3.3</span>
+    配送ルート・稼働時間シミュレーター <span style="font-size:0.75rem; color:#94a3b8;">Ver3.4</span>
     <span class="badge" id="modeBadge">デモシミュレーター稼働中</span>
     <span class="badge-quota" id="quotaBadge">本日 API 利用: 0 / 100 回</span>
   </h1>
@@ -696,10 +714,10 @@ body.preparing-batch-print #batchPrintContainer {
       </div>
     </div>
 
-    <!-- ③ 設定マスター (マテハン上限・稼働時間限界・総距離上限・運行数上限) -->
+    <!-- ③ 設定マスター (車格×マテハン別上限値マトリクス + 稼働時間限界・総距離上限・運行数上限) -->
     <div class="master-bar">
       <div class="flex-row" style="justify-content: space-between; margin-bottom: 8px;">
-        <span style="font-weight:bold; font-size:0.92rem; color:#7dd3fc;">■ 設定マスター(マテハン上限・お任せ配車キー設定)</span>
+        <span style="font-weight:bold; font-size:0.92rem; color:#7dd3fc;">■ 設定マスター(車格別マテハン上限マトリクス・お任せ配車キー設定)</span>
         <button class="btn btn-outline btn-sm" onclick="resetMasterSettings()">標準値に戻す</button>
       </div>
 
@@ -718,37 +736,46 @@ body.preparing-batch-print #batchPrintContainer {
         </div>
       </div>
 
+      <!-- 車格 × マテハン上限マトリクス -->
       <div style="border-top: 1px dashed rgba(148,163,184,0.35); padding-top: 8px;">
         <div class="flex-row" style="justify-content: space-between; margin-bottom: 6px;">
-          <span style="font-size:0.8rem; color:#bae6fd; font-weight:bold;">マテハン種別と上限値設定(個数 / カート / カゴ車 など)</span>
-          <span style="font-size:0.74rem; color:var(--muted);">選択中のマテハン上限が積載上限に反映されます</span>
+          <span style="font-size:0.8rem; color:#bae6fd; font-weight:bold;">車格別 マテハン・積載上限値マスタ (カゴ車 / カート / 個数 等)</span>
+          <div class="flex-row">
+            <span style="font-size:0.74rem; color:var(--muted);">標準適用マテハン:</span>
+            <select id="activeMaterialSelect" style="width:auto; padding:3px 8px; font-size:0.78rem;" onchange="onActiveMaterialChange()"></select>
+          </div>
         </div>
-        <div class="grid-3" style="margin-bottom: 8px;">
+
+        <div style="overflow-x:auto; margin-bottom: 8px;">
+          <table class="master-matrix-table" id="vehicleMaterialMatrixTable"></table>
+        </div>
+
+        <div class="grid-2">
           <div>
-            <label>適用マテハン種別</label>
-            <select id="activeMaterialSelect" onchange="onActiveMaterialChange()"></select>
-          </div>
-          <div>
-            <label>新規マテハン名称</label>
-            <input type="text" id="newMatName" placeholder="例: パレット" />
-          </div>
-          <div>
-            <label>上限値</label>
+            <label>マテハン種別を追加 (例: カゴ車, カート, 個数, パレット)</label>
             <div class="flex-row">
-              <input type="number" id="newMatLimit" value="20" min="1" step="1" style="flex:1;" />
-              <button class="btn btn-primary btn-sm" onclick="addOrUpdateMaterial()">追加/更新</button>
+              <input type="text" id="newMatName" placeholder="マテハン名称" style="flex:1;" />
+              <input type="number" id="newMatDefaultLimit" value="20" min="1" step="1" style="width:76px;" title="初期上限値" />
+              <button class="btn btn-primary btn-sm" onclick="addMaterialType()">マテハン追加</button>
+            </div>
+          </div>
+          <div>
+            <label>車格を追加 (例: 軽バン, 3tワイド, 増t車)</label>
+            <div class="flex-row">
+              <input type="text" id="newVehicleLabel" placeholder="車格名 (例: 増t車)" style="flex:1;" />
+              <input type="number" id="newVehicleTollMult" value="1.35" min="0.5" max="3.0" step="0.05" style="width:74px;" title="高速料金係数" />
+              <button class="btn btn-primary btn-sm" onclick="addVehicleType()">車格追加</button>
             </div>
           </div>
         </div>
-        <div id="materialChipsList" class="flex-row"></div>
       </div>
     </div>
 
-    <!-- ① お任せ自動コース組み (複数出着車庫・荷物出来上がり時間・コース/車格/納品備考対応) -->
+    <!-- ① お任せ自動コース組み -->
     <div class="auto-build-bar">
       <div style="font-weight: bold; font-size:0.92rem; margin-bottom:8px; color: #d8b4fe; display: flex; justify-content: space-between; align-items:center; flex-wrap:wrap; gap: 6px;">
-        <span>■ お任せ自動コース組み (複数出着車庫・出来上がり時間待機・マスター条件対応)</span>
-        <button class="btn btn-outline btn-sm" onclick="downloadBlankFormatCSV()">空フォーマット CSV出力</button>
+        <span>■ お任せ自動コース組み (コース・車格・マテハン上限・出来上がり時間対応)</span>
+        <button class="btn btn-outline btn-sm" onclick="downloadBlankFormatCSV()">お任せ自動配車用 空フォーマット CSV出力</button>
       </div>
 
       <div class="grid-2" style="margin-bottom:8px;">
@@ -791,7 +818,7 @@ body.preparing-batch-print #batchPrintContainer {
 
       <div class="flex-row" style="justify-content: space-between;">
         <span style="font-size:0.75rem; color:var(--muted);">
-          ※CSVに「コース」「車格」「納品備考」「荷物出来上がり時間」があれば反映します。自動編成後はAPI消費0で一覧表示し、一覧から一括API計算＆一括保存が可能です。
+          ※CSVの「コース」「車格」「マテハン種別」「積載上限値」「納品備考」「荷物出来上がり時間」を読み込み、自動配車組みの制約条件に組み込みます。
         </span>
         <label class="btn btn-purple btn-sm" style="margin:0; cursor:pointer;">
           納品先 CSV/Excel 読込 &amp; 自動コース作成
@@ -828,7 +855,7 @@ body.preparing-batch-print #batchPrintContainer {
       </div>
       <div class="flex-row" style="justify-content: flex-end; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
         <span style="font-size:0.78rem; color:var(--muted); margin-right: auto;">
-          全コースデータのバックアップ・共有:
+          全コースデータ・マスター設定のバックアップ・共有:
         </span>
         <button class="btn btn-outline btn-sm" onclick="exportCoursesJSON()">セーブデータ書き出し (.json)</button>
         <label class="btn btn-outline btn-sm" style="margin:0; cursor:pointer;">
@@ -840,7 +867,7 @@ body.preparing-batch-print #batchPrintContainer {
 
     <!-- 1. 運行日時・車格・休憩ルール -->
     <div class="card">
-      <h2>1. 運行日時・車格(積載上限)・休憩ルール設定</h2>
+      <h2>1. 運行日時・標準車格・マテハン(積載上限)・休憩ルール設定</h2>
       <div class="grid-3">
         <div>
           <label>運行日付</label>
@@ -851,15 +878,11 @@ body.preparing-batch-print #batchPrintContainer {
           <input type="time" id="startTime" value="07:00" />
         </div>
         <div>
-          <label>車格 / 最大積載上限</label>
+          <label>車格 / マテハン / 最大積載上限</label>
           <div class="flex-row">
-            <select id="vehicleClass" onchange="onVehicleClassChange()" style="flex:1.4;">
-              <option value="4t" selected>4t車(標準: 22)</option>
-              <option value="3t">3t車(標準: 12)</option>
-              <option value="2t">2t車(標準: 8)</option>
-              <option value="10t">10t 大型(標準: 36)</option>
-            </select>
-            <input type="number" id="maxCapacityInput" value="22" min="1" step="1" style="width: 76px;" title="1運行あたりの最大積載上限" />
+            <select id="vehicleClass" onchange="onVehicleOrMaterialRuleChange()" style="flex:1.1;"></select>
+            <select id="courseMaterialType" onchange="onVehicleOrMaterialRuleChange()" style="flex:1.0;"></select>
+            <input type="number" id="maxCapacityInput" value="22" min="1" step="1" style="width: 72px;" title="1運行あたりの最大積載上限" />
           </div>
         </div>
       </div>
@@ -894,7 +917,7 @@ body.preparing-batch-print #batchPrintContainer {
     <!-- 2. 車庫・配送ルート地点設定 -->
     <div class="card">
       <h2>
-        <span>2. 車庫・配送ルート地点設定(出来上がり時間・車格・備考対応)</span>
+        <span>2. 車庫・配送ルート地点設定(出来上がり時間・車格・マテハン・備考対応)</span>
         <button class="btn btn-outline btn-sm" onclick="addStop()">+ 地点を追加</button>
       </h2>
 
@@ -973,7 +996,7 @@ body.preparing-batch-print #batchPrintContainer {
       <div class="print-only-header">
         <div>
           <h1 id="printCourseTitle">配送運行指示書・ルートシミュレーション</h1>
-          <div style="font-size:8pt; color: #475569;">作成ツール: 配送ルート・稼働時間シミュレーター Ver3.3</div>
+          <div style="font-size:8pt; color: #475569;">作成ツール: 配送ルート・稼働時間シミュレーター Ver3.4</div>
         </div>
         <div class="print-meta" id="printMetaInfo">
           運行日: ----/--/-- | 車格: 4t車(上限22)
@@ -1035,27 +1058,27 @@ body.preparing-batch-print #batchPrintContainer {
 
 <script>
 const DAILY_API_LIMIT = 100;
-const STORAGE_KEY_API = "wing_gmaps_key_v33";
-const STORAGE_KEY_COURSES = "wing_saved_courses_v33";
-const STORAGE_KEY_QUOTA = "wing_api_quota_v33";
-const STORAGE_KEY_MASTER = "wing_master_settings_v33";
+const STORAGE_KEY_API = "wing_gmaps_key_v34";
+const STORAGE_KEY_COURSES = "wing_saved_courses_v34";
+const STORAGE_KEY_QUOTA = "wing_api_quota_v34";
+const STORAGE_KEY_MASTER = "wing_master_settings_v34";
 
-const VEHICLE_SPECS = {
-  "2t":  { label: "2t車",     defaultCap: 8,  tollMult: 1.0 },
-  "3t":  { label: "3t車",     defaultCap: 12, tollMult: 1.15 },
-  "4t":  { label: "4t車",     defaultCap: 22, tollMult: 1.2 },
-  "10t": { label: "10t 大型", defaultCap: 36, tollMult: 1.65 }
-};
-
+// 車格 × マテハン別積載上限マトリクスの標準値
 const DEFAULT_MASTER = {
   maxWorkHours: 12,
   maxDistKm: 200,
   maxTrips: 3,
   activeMaterialId: "cart",
   materials: [
-    { id: "piece", name: "個数", limit: 120 },
-    { id: "cart",  name: "カート", limit: 22 },
-    { id: "cage",  name: "カゴ車", limit: 14 }
+    { id: "piece", name: "個数",   defaultLimit: 120 },
+    { id: "cart",  name: "カート", defaultLimit: 22 },
+    { id: "cage",  name: "カゴ車", defaultLimit: 14 }
+  ],
+  vehicles: [
+    { id: "2t",  label: "2t車",     tollMult: 1.0,  limits: { piece: 60,  cart: 8,  cage: 6 } },
+    { id: "3t",  label: "3t車",     tollMult: 1.15, limits: { piece: 90,  cart: 12, cage: 8 } },
+    { id: "4t",  label: "4t車",     tollMult: 1.2,  limits: { piece: 150, cart: 22, cage: 14 } },
+    { id: "10t", label: "10t 大型", tollMult: 1.65, limits: { piece: 300, cart: 36, cage: 24 } }
   ],
   garages: [
     { id: "g_yashio", name: "八潮車庫", address: "埼玉県八潮市大瀬", moveMin: 20, moveKm: 6.5 },
@@ -1068,14 +1091,13 @@ const DEFAULT_MASTER = {
 let masterSettings = loadMasterSettings();
 
 let stops = [
-  { name: "八潮常温センター", address: "埼玉県八潮市大瀬", loadQty: 0, stayMin: 15, targetTime: "", readyTime: "", courseCode: "1コース", vehicleClass: "4t", note: "", useHighway: false },
-  { name: "草加八幡店", address: "埼玉県草加市八幡町", loadQty: 12, stayMin: 25, targetTime: "08:30", readyTime: "", courseCode: "1コース", vehicleClass: "4t", note: "高さ制限3.8m注意", useHighway: false },
-  { name: "八潮常温センター(折返)", address: "埼玉県八潮市大瀬", loadQty: 0, stayMin: 20, targetTime: "", readyTime: "10:15", courseCode: "1コース", vehicleClass: "4t", note: "2便積込(10:15以降開始)", useHighway: true },
-  { name: "赤羽台店", address: "東京都北区赤羽台", loadQty: 10, stayMin: 30, targetTime: "11:30", readyTime: "", courseCode: "1コース", vehicleClass: "4t", note: "4t車まで進入可", useHighway: true }
+  { name: "八潮常温センター", address: "埼玉県八潮市大瀬", loadQty: 0, stayMin: 15, targetTime: "", readyTime: "", courseCode: "1コース", vehicleClass: "4t", materialType: "カート", customCap: "", note: "", useHighway: false },
+  { name: "草加八幡店", address: "埼玉県草加市八幡町", loadQty: 12, stayMin: 25, targetTime: "08:30", readyTime: "", courseCode: "1コース", vehicleClass: "4t", materialType: "カート", customCap: "", note: "高さ制限3.8m注意", useHighway: false },
+  { name: "八潮常温センター(折返)", address: "埼玉県八潮市大瀬", loadQty: 0, stayMin: 20, targetTime: "", readyTime: "10:15", courseCode: "1コース", vehicleClass: "4t", materialType: "カート", customCap: "", note: "2便積込(10:15以降開始)", useHighway: true },
+  { name: "赤羽台店", address: "東京都北区赤羽台", loadQty: 10, stayMin: 30, targetTime: "11:30", readyTime: "", courseCode: "1コース", vehicleClass: "4t", materialType: "カート", customCap: "", note: "4t車まで進入可", useHighway: true }
 ];
 
 let autoGeneratedCourses = [];
-// コースごとのAPI計算済みルートキャッシュ (courseIdx -> { resolvedPoints, segments, simResult, isApiCalculated })
 let apiCalculatedCourseCache = {};
 
 const geoDict = [
@@ -1123,6 +1145,7 @@ window.onload = () => {
   refreshQuotaBadge();
   refreshCourseDropdown();
   renderMasterUI();
+  syncVehicleAndMaterialSelects();
   toggleGarageFields();
   initMap();
   renderStops();
@@ -1146,7 +1169,7 @@ function initMap() {
 }
 
 // ==========================================
-// ③ 設定マスター管理
+// ③ 設定マスター管理 (車格×マテハン別上限マトリクス)
 // ==========================================
 function loadMasterSettings() {
   try {
@@ -1157,6 +1180,7 @@ function loadMasterSettings() {
         ...DEFAULT_MASTER,
         ...parsed,
         materials: Array.isArray(parsed.materials) && parsed.materials.length > 0 ? parsed.materials : DEFAULT_MASTER.materials,
+        vehicles: Array.isArray(parsed.vehicles) && parsed.vehicles.length > 0 ? parsed.vehicles : DEFAULT_MASTER.vehicles,
         garages: Array.isArray(parsed.garages) && parsed.garages.length > 0 ? parsed.garages : DEFAULT_MASTER.garages
       };
     }
@@ -1169,11 +1193,12 @@ function saveMasterSettings() {
 }
 
 function resetMasterSettings() {
-  if (!confirm("設定マスター（稼働時間限界・距離上限・運行数上限・マテハン・出着車庫）を標準値に戻しますか？")) return;
+  if (!confirm("設定マスター（稼働時間限界・距離上限・運行数上限・車格別マテハン上限・出着車庫）を標準値に戻しますか？")) return;
   masterSettings = JSON.parse(JSON.stringify(DEFAULT_MASTER));
   saveMasterSettings();
   renderMasterUI();
-  onActiveMaterialChange();
+  syncVehicleAndMaterialSelects();
+  renderStops();
   runSimulation(true);
 }
 
@@ -1182,35 +1207,129 @@ function renderMasterUI() {
   document.getElementById("masterMaxDistKm").value = masterSettings.maxDistKm;
   document.getElementById("masterMaxTrips").value = masterSettings.maxTrips;
 
-  // マテハンセレクト & チップ描画
+  // 標準マテハンセレクト
   const matSelect = document.getElementById("activeMaterialSelect");
   matSelect.innerHTML = "";
   masterSettings.materials.forEach(m => {
     const opt = document.createElement("option");
     opt.value = m.id;
-    opt.textContent = `${m.name} (上限: ${m.limit})`;
+    opt.textContent = m.name;
     if (m.id === masterSettings.activeMaterialId) opt.selected = true;
     matSelect.appendChild(opt);
   });
 
-  const chipsEl = document.getElementById("materialChipsList");
-  chipsEl.innerHTML = "";
+  // 車格×マテハン マトリクステーブル描画
+  const tbl = document.getElementById("vehicleMaterialMatrixTable");
+  let thead = `<thead><tr><th style="width:120px;">車格 / 係数</th>`;
   masterSettings.materials.forEach(m => {
-    const chip = document.createElement("div");
-    chip.className = "preset-chip";
-    const isActive = m.id === masterSettings.activeMaterialId;
-    chip.innerHTML = `
-      <span style="color:${isActive ? "#6ee7b7" : "#e2e8f0"}; font-weight:${isActive ? "bold" : "normal"};">
-        ${escapeHtml(m.name)}: <strong>${m.limit}</strong>
-      </span>
-      <button class="btn btn-outline btn-sm" style="padding:1px 6px; font-size:0.7rem;" onclick="editMaterialToForm('${m.id}')">編集</button>
-      ${masterSettings.materials.length > 1 ? `<button class="btn btn-danger" style="padding:1px 6px; font-size:0.7rem;" onclick="deleteMaterial('${m.id}')">×</button>` : ""}
-    `;
-    chipsEl.appendChild(chip);
+    thead += `
+      <th>
+        ${escapeHtml(m.name)} 上限
+        ${masterSettings.materials.length > 1
+          ? `<button class="btn btn-danger" style="padding:0 4px; font-size:0.65rem; margin-left:3px;" onclick="deleteMaterialType('${m.id}')" title="このマテハン列を削除">×</button>`
+          : ""}
+      </th>`;
   });
+  thead += `<th style="width:46px;">削除</th></tr></thead>`;
+
+  let tbody = `<tbody>`;
+  masterSettings.vehicles.forEach((v, vIdx) => {
+    tbody += `<tr>
+      <td style="text-align:left; font-weight:bold; font-size:0.78rem;">
+        ${escapeHtml(v.label)} <span style="color:var(--muted); font-weight:normal; font-size:0.7rem;">(×${v.tollMult})</span>
+      </td>`;
+    masterSettings.materials.forEach(m => {
+      const currentVal = (v.limits && v.limits[m.id] !== undefined) ? v.limits[m.id] : (m.defaultLimit || 10);
+      tbody += `
+        <td>
+          <input type="number" min="1" step="1" value="${currentVal}"
+            onchange="updateVehicleMaterialLimit(${vIdx}, '${m.id}', this.value)" />
+        </td>`;
+    });
+    tbody += `<td>
+      ${masterSettings.vehicles.length > 1
+        ? `<button class="btn btn-danger" style="padding:2px 6px; font-size:0.7rem;" onclick="deleteVehicleType(${vIdx})">×</button>`
+        : "-"}
+    </td></tr>`;
+  });
+  tbody += `</tbody>`;
+  tbl.innerHTML = thead + tbody;
 
   renderGaragePresetsUI();
   updateKpiLabelsFromMaster();
+}
+
+function updateVehicleMaterialLimit(vIdx, matId, val) {
+  const num = Math.max(1, parseFloat(val || "1"));
+  if (!masterSettings.vehicles[vIdx].limits) masterSettings.vehicles[vIdx].limits = {};
+  masterSettings.vehicles[vIdx].limits[matId] = num;
+  saveMasterSettings();
+  onVehicleOrMaterialRuleChange();
+}
+
+function addMaterialType() {
+  const name = document.getElementById("newMatName").value.trim();
+  const defLimit = Math.max(1, parseFloat(document.getElementById("newMatDefaultLimit").value || "10"));
+  if (!name) return alert("追加するマテハン名称（例: パレット、オリコン）を入力してください。");
+  if (masterSettings.materials.some(m => m.name === name)) {
+    return alert("同じ名称のマテハンが既に登録されています。");
+  }
+  const newId = "mat_" + Date.now();
+  masterSettings.materials.push({ id: newId, name, defaultLimit: defLimit });
+  masterSettings.vehicles.forEach(v => {
+    if (!v.limits) v.limits = {};
+    v.limits[newId] = defLimit;
+  });
+  masterSettings.activeMaterialId = newId;
+  document.getElementById("newMatName").value = "";
+  saveMasterSettings();
+  renderMasterUI();
+  syncVehicleAndMaterialSelects();
+  renderStops();
+}
+
+function deleteMaterialType(matId) {
+  if (masterSettings.materials.length <= 1) return alert("最低1つのマテハン種別が必要です。");
+  masterSettings.materials = masterSettings.materials.filter(m => m.id !== matId);
+  masterSettings.vehicles.forEach(v => {
+    if (v.limits) delete v.limits[matId];
+  });
+  if (masterSettings.activeMaterialId === matId) {
+    masterSettings.activeMaterialId = masterSettings.materials[0].id;
+  }
+  saveMasterSettings();
+  renderMasterUI();
+  syncVehicleAndMaterialSelects();
+  renderStops();
+}
+
+function addVehicleType() {
+  const label = document.getElementById("newVehicleLabel").value.trim();
+  const tollMult = Math.max(0.5, parseFloat(document.getElementById("newVehicleTollMult").value || "1.2"));
+  if (!label) return alert("追加する車格名（例: 増t車、軽バン）を入力してください。");
+  if (masterSettings.vehicles.some(v => v.label === label || v.id === label)) {
+    return alert("同じ車格名が既に登録されています。");
+  }
+  const newId = label.replace(/\s+/g, "");
+  const limits = {};
+  masterSettings.materials.forEach(m => {
+    limits[m.id] = m.defaultLimit || 10;
+  });
+  masterSettings.vehicles.push({ id: newId, label, tollMult, limits });
+  document.getElementById("newVehicleLabel").value = "";
+  saveMasterSettings();
+  renderMasterUI();
+  syncVehicleAndMaterialSelects();
+  renderStops();
+}
+
+function deleteVehicleType(vIdx) {
+  if (masterSettings.vehicles.length <= 1) return alert("最低1つの車格が必要です。");
+  masterSettings.vehicles.splice(vIdx, 1);
+  saveMasterSettings();
+  renderMasterUI();
+  syncVehicleAndMaterialSelects();
+  renderStops();
 }
 
 function onMasterParamChange() {
@@ -1231,53 +1350,99 @@ function getActiveMaterial() {
   return masterSettings.materials.find(m => m.id === masterSettings.activeMaterialId) || masterSettings.materials[0];
 }
 
+function resolveMaterialByNameOrId(val) {
+  if (!val) return getActiveMaterial();
+  const s = String(val).trim();
+  return masterSettings.materials.find(m => m.id === s || m.name === s) || getActiveMaterial();
+}
+
+function resolveVehicleByNameOrId(val) {
+  if (!val) {
+    const selId = document.getElementById("vehicleClass")?.value;
+    return masterSettings.vehicles.find(v => v.id === selId) || masterSettings.vehicles[0];
+  }
+  const s = String(val).trim();
+  return masterSettings.vehicles.find(v => v.id === s || v.label === s || v.label.startsWith(s)) || masterSettings.vehicles[0];
+}
+
+function getCapacityLimitFor(vehicleVal, materialVal, explicitCap = null) {
+  if (explicitCap !== null && explicitCap !== "" && !isNaN(parseFloat(explicitCap)) && parseFloat(explicitCap) > 0) {
+    return parseFloat(explicitCap);
+  }
+  const veh = resolveVehicleByNameOrId(vehicleVal);
+  const mat = resolveMaterialByNameOrId(materialVal);
+  if (veh && veh.limits && veh.limits[mat.id] !== undefined) {
+    return Number(veh.limits[mat.id]);
+  }
+  return Number(mat.defaultLimit || 22);
+}
+
 function onActiveMaterialChange() {
   const selId = document.getElementById("activeMaterialSelect").value;
   masterSettings.activeMaterialId = selId;
-  const mat = getActiveMaterial();
-  if (mat) {
-    document.getElementById("maxCapacityInput").value = mat.limit;
-  }
+  const courseMatSel = document.getElementById("courseMaterialType");
+  if (courseMatSel) courseMatSel.value = selId;
   saveMasterSettings();
+  onVehicleOrMaterialRuleChange();
   updateKpiLabelsFromMaster();
 }
 
-function editMaterialToForm(id) {
-  const mat = masterSettings.materials.find(m => m.id === id);
-  if (!mat) return;
-  document.getElementById("newMatName").value = mat.name;
-  document.getElementById("newMatLimit").value = mat.limit;
+function syncVehicleAndMaterialSelects() {
+  const vSel = document.getElementById("vehicleClass");
+  const prevV = vSel.value || "4t";
+  vSel.innerHTML = "";
+  masterSettings.vehicles.forEach(v => {
+    const opt = document.createElement("option");
+    opt.value = v.id;
+    opt.textContent = v.label;
+    if (v.id === prevV) opt.selected = true;
+    vSel.appendChild(opt);
+  });
+
+  const mSel = document.getElementById("courseMaterialType");
+  const prevM = mSel.value || masterSettings.activeMaterialId;
+  mSel.innerHTML = "";
+  masterSettings.materials.forEach(m => {
+    const opt = document.createElement("option");
+    opt.value = m.id;
+    opt.textContent = m.name;
+    if (m.id === prevM) opt.selected = true;
+    mSel.appendChild(opt);
+  });
+
+  onVehicleOrMaterialRuleChange();
 }
 
-function addOrUpdateMaterial() {
-  const name = document.getElementById("newMatName").value.trim();
-  const limit = Math.max(1, parseFloat(document.getElementById("newMatLimit").value || "1"));
-  if (!name) return alert("マテハン名称（例: 個数、カート、カゴ車）を入力してください。");
-
-  const existing = masterSettings.materials.find(m => m.name === name);
-  if (existing) {
-    existing.limit = limit;
-    masterSettings.activeMaterialId = existing.id;
-  } else {
-    const newId = "mat_" + Date.now();
-    masterSettings.materials.push({ id: newId, name, limit });
-    masterSettings.activeMaterialId = newId;
-  }
+function onVehicleOrMaterialRuleChange() {
+  const vId = document.getElementById("vehicleClass").value;
+  const mId = document.getElementById("courseMaterialType").value;
+  const limit = getCapacityLimitFor(vId, mId);
   document.getElementById("maxCapacityInput").value = limit;
-  document.getElementById("newMatName").value = "";
-  saveMasterSettings();
-  renderMasterUI();
+  const mat = resolveMaterialByNameOrId(mId);
+  document.getElementById("kpiLoadLabel").textContent = `積載判定(${mat.name}上限)`;
 }
 
-function deleteMaterial(id) {
-  if (masterSettings.materials.length <= 1) return alert("最低1つのマテハン設定が必要です。");
-  masterSettings.materials = masterSettings.materials.filter(m => m.id !== id);
-  if (masterSettings.activeMaterialId === id) {
-    masterSettings.activeMaterialId = masterSettings.materials[0].id;
-    document.getElementById("maxCapacityInput").value = masterSettings.materials[0].limit;
-  }
-  saveMasterSettings();
-  renderMasterUI();
+function getVehicleSettings(overrideVehicleClass = null, overrideMaterialType = null, overrideMaxCap = null) {
+  const vId = overrideVehicleClass || document.getElementById("vehicleClass").value;
+  const mId = overrideMaterialType || document.getElementById("courseMaterialType").value;
+  const veh = resolveVehicleByNameOrId(vId);
+  const mat = resolveMaterialByNameOrId(mId);
+
+  const uiCap = parseFloat(document.getElementById("maxCapacityInput").value || "0");
+  const maxCap = (overrideMaxCap !== null && overrideMaxCap > 0)
+    ? overrideMaxCap
+    : ((overrideVehicleClass || overrideMaterialType)
+      ? getCapacityLimitFor(veh.id, mat.id)
+      : (uiCap > 0 ? uiCap : getCapacityLimitFor(veh.id, mat.id)));
+
+  return {
+    vClass: veh.id,
+    label: veh.label,
+    materialId: mat.id,
+    materialName: mat.name,
+    maxCap,
+    tollMult: veh.tollMult || 1.2
+  };
 }
 
 // ==========================================
@@ -1383,32 +1548,8 @@ function applyGaragePresetToField(dir, presetId) {
 }
 
 // ==========================================
-// 車格・API使用量管理
+// API 使用量管理
 // ==========================================
-function onVehicleClassChange() {
-  const vClass = document.getElementById("vehicleClass").value;
-  const spec = VEHICLE_SPECS[vClass] || VEHICLE_SPECS["4t"];
-  const activeMat = getActiveMaterial();
-  // マテハンが「カート」の場合は車格標準またはマテハン上限を反映
-  document.getElementById("maxCapacityInput").value = (activeMat && activeMat.id === "cart")
-    ? spec.defaultCap
-    : (activeMat ? activeMat.limit : spec.defaultCap);
-}
-
-function getVehicleSettings(overrideClass = null) {
-  const vClass = overrideClass && VEHICLE_SPECS[overrideClass]
-    ? overrideClass
-    : document.getElementById("vehicleClass").value;
-  const spec = VEHICLE_SPECS[vClass] || VEHICLE_SPECS["4t"];
-  const maxCap = Math.max(1, parseFloat(document.getElementById("maxCapacityInput").value || spec.defaultCap));
-  return {
-    vClass,
-    label: spec.label,
-    maxCap,
-    tollMult: spec.tollMult
-  };
-}
-
 function getQuotaData() {
   const today = getTodayString();
   try {
@@ -1554,12 +1695,13 @@ function refreshCourseDropdown(selectedKey = "") {
   });
 }
 
-function buildCoursePayload(courseName, customStops, customVehicleClass = null, customSimResult = null) {
-  const vSettings = getVehicleSettings(customVehicleClass);
+function buildCoursePayload(courseName, customStops, customVehicleClass = null, customMaterialType = null, customMaxCap = null, customSimResult = null) {
+  const vSettings = getVehicleSettings(customVehicleClass, customMaterialType, customMaxCap);
   return {
     courseName,
     startTime: document.getElementById("startTime").value || "07:00",
     vehicleClass: vSettings.vClass,
+    materialType: vSettings.materialId,
     maxCapacity: vSettings.maxCap,
     highwayMode: document.getElementById("highwayMode").value,
     stayMode: document.getElementById("stayMode").value,
@@ -1585,7 +1727,6 @@ function saveCurrentCourse() {
   alert(`コース「${courseName}」を保存しました。`);
 }
 
-// ② 自動コース一括保存
 function saveAllGeneratedCourses() {
   if (!autoGeneratedCourses || autoGeneratedCourses.length === 0) {
     return alert("保存する自動編成コースがありません。");
@@ -1598,7 +1739,14 @@ function saveAllGeneratedCourses() {
     const title = course.courseTitle || `自動編成_コース${idx + 1}`;
     const apiData = apiCalculatedCourseCache[idx];
     const simRes = apiData ? apiData.simResult : null;
-    courses[title] = buildCoursePayload(title, course.stops, course.vehicleClass || null, simRes);
+    courses[title] = buildCoursePayload(
+      title,
+      course.stops,
+      course.vehicleClass || null,
+      course.materialId || null,
+      course.maxCap || null,
+      simRes
+    );
     savedCount++;
     lastSavedTitle = title;
   });
@@ -1618,6 +1766,7 @@ function loadSelectedCourse() {
   document.getElementById("courseNameInput").value = data.courseName;
   if (data.startTime) document.getElementById("startTime").value = data.startTime;
   if (data.vehicleClass) document.getElementById("vehicleClass").value = data.vehicleClass;
+  if (data.materialType) document.getElementById("courseMaterialType").value = data.materialType;
   if (data.maxCapacity) document.getElementById("maxCapacityInput").value = data.maxCapacity;
   if (data.highwayMode) document.getElementById("highwayMode").value = data.highwayMode;
   if (data.breakRuleMode) document.getElementById("breakRuleMode").value = data.breakRuleMode;
@@ -1632,8 +1781,9 @@ function loadSelectedCourse() {
 
   stops = JSON.parse(JSON.stringify(data.stops));
   renderStops();
+  const vSettings = getVehicleSettings(data.vehicleClass, data.materialType, data.maxCapacity);
   if (data.cachedSimResult) {
-    renderSimulationResult(data.cachedSimResult, getGarageConfig(), getVehicleSettings(data.vehicleClass));
+    renderSimulationResult(data.cachedSimResult, getGarageConfig(), vSettings);
   } else {
     runSimulation(true);
   }
@@ -1657,7 +1807,7 @@ function exportCoursesJSON() {
   }
   const exportPayload = {
     app: "Delivery Route Simulator",
-    version: "3.3",
+    version: "3.4",
     exportedAt: new Date().toISOString(),
     master: masterSettings,
     courses
@@ -1686,6 +1836,7 @@ function importCoursesJSON(event) {
         masterSettings = { ...masterSettings, ...parsed.master };
         saveMasterSettings();
         renderMasterUI();
+        syncVehicleAndMaterialSelects();
       }
       const currentCourses = getAllSavedCourses();
       let importCount = 0;
@@ -1738,6 +1889,18 @@ function renderStops() {
     const stayDisplayVal = (stayMode === "uniform") ? uniformMin : (stop.stayMin || 0);
     const loadVal = stop.loadQty !== undefined ? stop.loadQty : 0;
 
+    let vehicleOpts = `<option value="" ${!stop.vehicleClass ? "selected" : ""}>全体設定に従う</option>`;
+    masterSettings.vehicles.forEach(v => {
+      const isSel = stop.vehicleClass === v.id || stop.vehicleClass === v.label;
+      vehicleOpts += `<option value="${escapeHtml(v.id)}" ${isSel ? "selected" : ""}>${escapeHtml(v.label)}</option>`;
+    });
+
+    let matOpts = `<option value="" ${!stop.materialType ? "selected" : ""}>全体設定に従う</option>`;
+    masterSettings.materials.forEach(m => {
+      const isSel = stop.materialType === m.id || stop.materialType === m.name;
+      matOpts += `<option value="${escapeHtml(m.name)}" ${isSel ? "selected" : ""}>${escapeHtml(m.name)}</option>`;
+    });
+
     const stopDiv = document.createElement("div");
     stopDiv.className = "stop-item";
     stopDiv.innerHTML = `
@@ -1778,13 +1941,15 @@ function renderStops() {
         </div>
         <div>
           <label>車格指定</label>
-          <select onchange="stops[${idx}].vehicleClass = this.value">
-            <option value="" ${!stop.vehicleClass ? "selected" : ""}>全体設定に従う</option>
-            <option value="2t" ${stop.vehicleClass === "2t" ? "selected" : ""}>2t車</option>
-            <option value="3t" ${stop.vehicleClass === "3t" ? "selected" : ""}>3t車</option>
-            <option value="4t" ${stop.vehicleClass === "4t" ? "selected" : ""}>4t車</option>
-            <option value="10t" ${stop.vehicleClass === "10t" ? "selected" : ""}>10t 大型</option>
-          </select>
+          <select onchange="stops[${idx}].vehicleClass = this.value">${vehicleOpts}</select>
+        </div>
+        <div>
+          <label>マテハン</label>
+          <select onchange="stops[${idx}].materialType = this.value">${matOpts}</select>
+        </div>
+        <div>
+          <label>上限値(任意)</label>
+          <input type="number" value="${escapeHtml(stop.customCap || "")}" min="1" step="1" onchange="stops[${idx}].customCap = this.value" placeholder="自動" title="空欄時はマスター参照" />
         </div>
         <div>
           <label>荷物出来上がり</label>
@@ -1831,6 +1996,8 @@ function addStop() {
     readyTime: "",
     courseCode: "",
     vehicleClass: "",
+    materialType: "",
+    customCap: "",
     note: "",
     useHighway: false
   });
@@ -1999,11 +2166,13 @@ function parseTimeToMinutes(timeStr, baseStartMin = 0) {
   return mins;
 }
 
-function evaluateTripLoads(targetStops, hubNameHint, maxCap) {
+function evaluateTripLoads(targetStops, hubNameHint, defaultMaxCap) {
   const hubAddr = targetStops[0] ? targetStops[0].address.trim() : "";
   let currentTripLoad = 0;
+  let currentTripCap = defaultMaxCap;
   let maxTripLoad = 0;
   let totalCourseLoad = 0;
+  let hasAnyOverload = false;
   const tripLoads = [];
 
   targetStops.forEach((s, idx) => {
@@ -2018,29 +2187,36 @@ function evaluateTripLoads(targetStops, hubNameHint, maxCap) {
     if (isHubReturn) {
       tripLoads.push(currentTripLoad);
       if (currentTripLoad > maxTripLoad) maxTripLoad = currentTripLoad;
+      if (currentTripLoad > currentTripCap) hasAnyOverload = true;
       currentTripLoad = 0;
+      currentTripCap = defaultMaxCap;
     } else {
+      if (qty > 0 && s.customCap && parseFloat(s.customCap) > 0) {
+        currentTripCap = Math.min(currentTripCap, parseFloat(s.customCap));
+      }
       currentTripLoad += qty;
       totalCourseLoad += qty;
       if (currentTripLoad > maxTripLoad) maxTripLoad = currentTripLoad;
+      if (currentTripLoad > currentTripCap) hasAnyOverload = true;
     }
   });
 
   if (currentTripLoad > 0 || tripLoads.length === 0) {
     tripLoads.push(currentTripLoad);
     if (currentTripLoad > maxTripLoad) maxTripLoad = currentTripLoad;
+    if (currentTripLoad > currentTripCap) hasAnyOverload = true;
   }
 
   return {
     tripLoads,
     maxTripLoad,
     totalCourseLoad,
-    isOverload: maxTripLoad > maxCap
+    isOverload: hasAnyOverload || (maxTripLoad > defaultMaxCap)
   };
 }
 
 // ==========================================
-// コアシミュレーション計算エンジン (荷物出来上がり時間・備考対応)
+// コアシミュレーション計算エンジン
 // ==========================================
 async function calculateCourseSchedule(targetStops, options) {
   const {
@@ -2159,7 +2335,6 @@ async function calculateCourseSchedule(targetStops, options) {
         notesList.push(`${pt.name}: ${pt.note.trim()}`);
       }
 
-      // 指定着時間枠判定 (±30分ルール)
       const targetMin = parseTimeToMinutes(pt.targetTime, initialStartMin);
       if (targetMin !== null) {
         const earliestAllowed = targetMin - 30;
@@ -2186,7 +2361,6 @@ async function calculateCourseSchedule(targetStops, options) {
         effectiveArrivalWaitMin -= absorbed;
       }
 
-      // 荷物出来上がり時間判定 (センター到着後、出来上がり時刻までは積込・作業開始を待機)
       const readyMin = parseTimeToMinutes(pt.readyTime, initialStartMin);
       let readyWaitMin = 0;
       let readyTimeText = "";
@@ -2238,6 +2412,8 @@ async function calculateCourseSchedule(targetStops, options) {
         address: pt.address,
         courseCode: pt.courseCode || "",
         vehicleClass: pt.vehicleClass || "",
+        materialType: pt.materialType || "",
+        customCap: pt.customCap || "",
         note: pt.note || "",
         loadQty: parseFloat(pt.loadQty || 0) || 0,
         rawArrMin,
@@ -2432,7 +2608,8 @@ function buildTimelineRowsHtml(simResult, garage) {
 
     let loadStayHtml = "";
     if (ev.loadQty > 0) {
-      loadStayHtml += `<span class="tag-load">荷量 ${ev.loadQty}</span><br>`;
+      const matSuffix = ev.materialType ? `(${ev.materialType})` : "";
+      loadStayHtml += `<span class="tag-load">荷量 ${ev.loadQty}${escapeHtml(matSuffix)}</span><br>`;
     }
     loadStayHtml += `滞在 ${ev.stayMin}分`;
     const totalNodeBreak = ev.preBreakMin + ev.postBreakMin;
@@ -2443,14 +2620,14 @@ function buildTimelineRowsHtml(simResult, garage) {
     const metaBits = [];
     if (ev.courseCode) metaBits.push(`コース:${ev.courseCode}`);
     if (ev.vehicleClass) metaBits.push(`車格:${ev.vehicleClass}`);
+    if (ev.customCap) metaBits.push(`上限:${ev.customCap}`);
     if (ev.note) metaBits.push(`備考:${ev.note}`);
 
     rowsHtml += `
       <tr class="${totalNodeBreak > 0 ? "row-break" : ""}">
         <td style="white-space:nowrap;">${timeHtml}</td>
         <td>
-          <strong>${escapeHtml(ev.name)}</strong>
-          ${ev.usedGoogleApi ? `<span class="tag-api">API</span>` : ""}<br>
+          <strong>${escapeHtml(ev.name)}</strong><br>
           <span style="font-size:0.72rem; color:var(--muted);">${escapeHtml(ev.address)}</span>
           ${metaBits.length > 0 ? `<br><span style="font-size:0.7rem; color:#fde68a;">${escapeHtml(metaBits.join(" / "))}</span>` : ""}
         </td>
@@ -2463,13 +2640,12 @@ function buildTimelineRowsHtml(simResult, garage) {
 
 function buildSummaryHtml(simResult, vehicleSettings) {
   const ld = simResult.loadSummary;
-  const activeMat = getActiveMaterial();
   const maxWorkMin = masterSettings.maxWorkHours * 60;
   const maxDistKm = masterSettings.maxDistKm;
   const summaryLines = [];
 
   summaryLines.push(
-    `マテハン: <strong>${escapeHtml(activeMat.name)}(上限${vehicleSettings.maxCap})</strong> / 車格: <strong>${vehicleSettings.label}</strong> | 各便積載: [${ld.tripLoads.join(" / ")}](総荷量:${ld.totalCourseLoad})` +
+    `車格: <strong>${escapeHtml(vehicleSettings.label)}</strong> / マテハン: <strong>${escapeHtml(vehicleSettings.materialName)}(上限${vehicleSettings.maxCap})</strong> | 各便積載: [${ld.tripLoads.join(" / ")}](総荷量:${ld.totalCourseLoad})` +
     (ld.isOverload ? ` <span style="color:#fca5a5; font-weight:bold;">※積載上限超過!</span>` : "")
   );
 
@@ -2593,16 +2769,16 @@ function renderSimulationResult(simResult, garage, vehicleSettings) {
   simResult.timelineEvents.forEach((ev, i) => {
     if (ev.type === "garage_dep") {
       lastSimulationRows.push({
-        順: i + 1, 種別: "出庫", コース: "", 車格: vehicleSettings.label,
-        名称: ev.name, 住所: ev.address, 荷量: 0,
+        順: i + 1, 種別: "出庫", コース: "", 車格: vehicleSettings.label, マテハン種別: vehicleSettings.materialName,
+        積載上限値: vehicleSettings.maxCap, 名称: ev.name, 住所: ev.address, 荷量: 0,
         指定枠: "", 荷物出来上がり: "", 到着時刻: "-", 待機_分: 0,
         滞在_分: 0, 休憩_分: 0, 出発時刻: formatMinutesToTime(ev.depMin),
         納品備考: "", ステータス: "出庫", 次区間詳細: ev.segExportText
       });
     } else if (ev.type === "garage_ret") {
       lastSimulationRows.push({
-        順: i + 1, 種別: "帰庫", コース: "", 車格: vehicleSettings.label,
-        名称: ev.name, 住所: ev.address, 荷量: 0,
+        順: i + 1, 種別: "帰庫", コース: "", 車格: vehicleSettings.label, マテハン種別: vehicleSettings.materialName,
+        積載上限値: vehicleSettings.maxCap, 名称: ev.name, 住所: ev.address, 荷量: 0,
         指定枠: "", 荷物出来上がり: "", 到着時刻: formatMinutesToTime(ev.arrMin), 待機_分: 0,
         滞在_分: 0, 休憩_分: 0, 出発時刻: "-",
         納品備考: "", ステータス: "帰庫完了", 次区間詳細: ev.segExportText
@@ -2612,7 +2788,10 @@ function renderSimulationResult(simResult, garage, vehicleSettings) {
       const depStr = formatMinutesToTime(ev.depMin);
       const totalNodeBreak = ev.preBreakMin + ev.postBreakMin;
       lastSimulationRows.push({
-        順: i + 1, 種別: "地点", コース: ev.courseCode || "", 車格: ev.vehicleClass || vehicleSettings.label,
+        順: i + 1, 種別: "地点", コース: ev.courseCode || "",
+        車格: ev.vehicleClass || vehicleSettings.label,
+        マテハン種別: ev.materialType || vehicleSettings.materialName,
+        積載上限値: ev.customCap || vehicleSettings.maxCap,
         名称: ev.name, 住所: ev.address, 荷量: ev.loadQty,
         指定枠: ev.targetWindowText || "指定なし",
         荷物出来上がり: ev.readyTimeText || "",
@@ -2665,30 +2844,30 @@ function formatMinutesToTime(totalMin) {
 // 空フォーマットCSV・サンプルCSV・お任せ自動コース組み
 // ==========================================
 function downloadBlankFormatCSV() {
-  const csvContent = "\uFEFF納品先名称,住所,荷量,滞在時間_分,指定着時間,行き高速,帰り高速,コース,車格,納品備考,荷物出来上がり時間\n" +
-    ",,,,,,,,,,\n" +
-    ",,,,,,,,,,\n";
+  const csvContent = "\uFEFF納品先名称,住所,荷量,滞在時間_分,指定着時間,行き高速,帰り高速,コース,車格,マテハン種別,積載上限値,納品備考,荷物出来上がり時間\n" +
+    ",,,,,,,,,,,,\n" +
+    ",,,,,,,,,,,,\n";
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "お任せコース作成用_拡張空フォーマット.csv";
+  a.download = "お任せ自動配車用_拡張空フォーマット.csv";
   a.click();
   URL.revokeObjectURL(url);
 }
 
 function downloadSampleCSV() {
-  const csvContent = "\uFEFF納品先名称,住所,荷量,滞在時間_分,指定着時間,行き高速,帰り高速,コース,車格,納品備考,荷物出来上がり時間\n" +
-    "草加八幡店,埼玉県草加市八幡町,10,20,08:30,不使用,不使用,1コース,4t,高さ3.8m注意,\n" +
-    "赤羽台店,東京都北区赤羽台,11,25,10:00,不使用,使用,1コース,4t,4t車まで可,\n" +
-    "船橋物流拠点,千葉県船橋市浜町,14,25,13:00,使用,不使用,2コース,4t,積込待機あり,12:15\n" +
-    "柏の葉ストア,千葉県柏市若柴,8,20,14:30,不使用,使用,2コース,4t,,\n" +
-    "川崎臨海センター,神奈川県川崎市川崎区東扇島,18,30,17:00,使用,使用,3コース,4t,大型ゲート指定,\n";
+  const csvContent = "\uFEFF納品先名称,住所,荷量,滞在時間_分,指定着時間,行き高速,帰り高速,コース,車格,マテハン種別,積載上限値,納品備考,荷物出来上がり時間\n" +
+    "草加八幡店,埼玉県草加市八幡町,10,20,08:30,不使用,不使用,1コース,4t,カート,22,高さ3.8m注意,\n" +
+    "赤羽台店,東京都北区赤羽台,11,25,10:00,不使用,使用,1コース,4t,カート,22,4t車まで可,\n" +
+    "船橋物流拠点,千葉県船橋市浜町,8,25,13:00,使用,不使用,2コース,4t,カゴ車,14,カゴ車納品・12:15出来上がり,12:15\n" +
+    "柏の葉ストア,千葉県柏市若柴,5,20,14:30,不使用,使用,2コース,4t,カゴ車,14,,\n" +
+    "川崎臨海センター,神奈川県川崎市川崎区東扇島,7,30,17:00,使用,使用,,3t,カゴ車,,3t車制限あり,\n";
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "配送先一括サンプル_拡張フォーマット.csv";
+  a.download = "配送先一括サンプル_車格マテハン上限対応.csv";
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -2713,6 +2892,8 @@ function buildStopsFromTrips(hubName, hubAddress, trips) {
       readyTime: earliestReady,
       courseCode: firstDel.courseCode || "",
       vehicleClass: firstDel.vehicleClass || "",
+      materialType: firstDel.materialType || "",
+      customCap: firstDel.resolvedCap || "",
       note: earliestReady ? `荷物出来上がり ${earliestReady} 以降積込` : "",
       useHighway: Boolean(firstDel.useHighwayOut)
     });
@@ -2731,6 +2912,8 @@ function buildStopsFromTrips(hubName, hubAddress, trips) {
         readyTime: del.readyTime || "",
         courseCode: del.courseCode || "",
         vehicleClass: del.vehicleClass || "",
+        materialType: del.materialType || "",
+        customCap: del.resolvedCap || "",
         note: del.note || "",
         useHighway: nextUseHwy
       });
@@ -2746,6 +2929,8 @@ function buildStopsFromTrips(hubName, hubAddress, trips) {
     readyTime: "",
     courseCode: "",
     vehicleClass: "",
+    materialType: "",
+    customCap: "",
     note: "",
     useHighway: false
   });
@@ -2757,7 +2942,7 @@ async function handleAutoCourseCSV(event) {
   if (!file) return;
   const hubName = document.getElementById("hubNameInput").value.trim() || "起点センター";
   const hubAddress = document.getElementById("hubAddressInput").value.trim() || "埼玉県八潮市大瀬";
-  const vehicleSettings = getVehicleSettings();
+  const defaultVehicleSettings = getVehicleSettings();
   const maxWorkMin = masterSettings.maxWorkHours * 60;
   const maxDistKm = masterSettings.maxDistKm;
   const maxTripsLimit = masterSettings.maxTrips;
@@ -2776,6 +2961,17 @@ async function handleAutoCourseCSV(event) {
           const legacyHwy = row["高速使用"] !== undefined ? isHighwayFlagTrue(row["高速使用"]) : false;
           const outHwy = row["行き高速"] !== undefined ? isHighwayFlagTrue(row["行き高速"]) : legacyHwy;
           const backHwy = row["帰り高速"] !== undefined ? isHighwayFlagTrue(row["帰り高速"]) : legacyHwy;
+
+          const rawVeh = String(row["車格"] || "").trim();
+          const rawMat = String(row["マテハン種別"] || row["マテハン"] || "").trim();
+          const rawCap = row["積載上限値"] !== undefined && row["積載上限値"] !== ""
+            ? parseFloat(row["積載上限値"])
+            : (row["上限値"] !== undefined && row["上限値"] !== "" ? parseFloat(row["上限値"]) : null);
+
+          const resolvedVeh = rawVeh ? resolveVehicleByNameOrId(rawVeh) : resolveVehicleByNameOrId(defaultVehicleSettings.vClass);
+          const resolvedMat = rawMat ? resolveMaterialByNameOrId(rawMat) : resolveMaterialByNameOrId(defaultVehicleSettings.materialId);
+          const resolvedCap = getCapacityLimitFor(resolvedVeh.id, resolvedMat.id, rawCap);
+
           return {
             name: String(row["納品先名称"] || row["名称"] || row["地点名"] || `納品先${i + 1}`).trim(),
             address: String(row["住所"] || "").trim(),
@@ -2784,7 +2980,12 @@ async function handleAutoCourseCSV(event) {
             targetTime: String(row["指定着時間"] || row["到着指定時間"] || "").trim(),
             readyTime: String(row["荷物出来上がり時間"] || row["出来上がり時間"] || row["出来上がり"] || "").trim(),
             courseCode: String(row["コース"] || "").trim(),
-            vehicleClass: String(row["車格"] || "").trim(),
+            vehicleClass: resolvedVeh.id,
+            vehicleLabel: resolvedVeh.label,
+            tollMult: resolvedVeh.tollMult || 1.2,
+            materialType: resolvedMat.name,
+            materialId: resolvedMat.id,
+            resolvedCap,
             note: String(row["納品備考"] || row["備考"] || "").trim(),
             useHighwayOut: outHwy,
             useHighwayBack: backHwy
@@ -2795,19 +2996,23 @@ async function handleAutoCourseCSV(event) {
         throw new Error("有効な納品先データが見つかりませんでした。空フォーマットCSVの列名をご確認ください。");
       }
 
-      const oversizedItems = deliveries.filter(d => d.loadQty > vehicleSettings.maxCap);
+      const oversizedItems = deliveries.filter(d => d.loadQty > d.resolvedCap);
       if (oversizedItems.length > 0) {
-        const names = oversizedItems.map(d => `${d.name}(荷量:${d.loadQty})`).join(", ");
-        alert(`【積載上限警告】 現在の積載上限(${vehicleSettings.maxCap})を単独で超える納品先があります:\n${names}\n※該当案件は単独運行として割り当てます。`);
+        const names = oversizedItems.map(d => `${d.name}(荷量:${d.loadQty} / ${d.vehicleLabel}・${d.materialType}上限:${d.resolvedCap})`).join("\n");
+        alert(`【積載上限警告】 設定上限を単独で超える納品先があります:\n${names}\n※該当案件は単独運行として割り当てます。`);
       }
 
+      // コース指定優先 → 指定着時間順 → 出来上がり時間順
       deliveries.sort((a, b) => {
         if (a.courseCode && b.courseCode && a.courseCode !== b.courseCode) {
           return a.courseCode.localeCompare(b.courseCode, "ja");
         }
+        if (a.courseCode && !b.courseCode) return -1;
+        if (!a.courseCode && b.courseCode) return 1;
         if (a.targetTime && b.targetTime) return a.targetTime.localeCompare(b.targetTime);
         if (a.targetTime) return -1;
         if (b.targetTime) return 1;
+        if (a.readyTime && b.readyTime) return a.readyTime.localeCompare(b.readyTime);
         return 0;
       });
 
@@ -2818,18 +3023,18 @@ async function handleAutoCourseCSV(event) {
       const breakRuleMode = document.getElementById("breakRuleMode").value;
       const garage = getGarageConfig();
 
-      const simOptionsDemoOnly = {
+      const buildSimOptsForItem = (item, courseMaxCap) => ({
         startTimeStr,
         highwayMode,
         stayMode,
         uniformStay,
-        vehicleMult: vehicleSettings.tollMult,
-        maxCap: vehicleSettings.maxCap,
+        vehicleMult: item.tollMult,
+        maxCap: courseMaxCap,
         breakRuleMode,
         garage,
         useGoogleApi: false,
         apiKey: ""
-      };
+      });
 
       const isWithinLimits = (res) => (
         res.totalRestraintMin <= maxWorkMin &&
@@ -2840,78 +3045,98 @@ async function handleAutoCourseCSV(event) {
       autoGeneratedCourses = [];
       apiCalculatedCourseCache = {};
       let currentTrips = [];
+      let currentCourseMeta = null; // { courseCode, vehicleClass, vehicleLabel, materialId, materialType, maxCap, tollMult }
+
+      const finalizeCurrentCourse = async () => {
+        if (currentTrips.length === 0 || !currentCourseMeta) return;
+        const confirmedStops = buildStopsFromTrips(hubName, hubAddress, currentTrips);
+        const confirmedRes = await calculateCourseSchedule(
+          confirmedStops,
+          buildSimOptsForItem(currentCourseMeta, currentCourseMeta.maxCap)
+        );
+        const codePrefix = currentCourseMeta.courseCode ? `[${currentCourseMeta.courseCode}] ` : "";
+        autoGeneratedCourses.push({
+          courseTitle: `${codePrefix}自動編成_コース${autoGeneratedCourses.length + 1} (${currentCourseMeta.vehicleLabel}/${currentTrips.length}運行)`,
+          courseCode: currentCourseMeta.courseCode,
+          vehicleClass: currentCourseMeta.vehicleClass,
+          vehicleLabel: currentCourseMeta.vehicleLabel,
+          materialId: currentCourseMeta.materialId,
+          materialType: currentCourseMeta.materialType,
+          maxCap: currentCourseMeta.maxCap,
+          tripCount: currentTrips.length,
+          trips: currentTrips,
+          stops: confirmedStops,
+          totalRestraintMin: confirmedRes.totalRestraintMin,
+          totalDistKm: confirmedRes.totalDistKm,
+          maxTripLoad: confirmedRes.loadSummary.maxTripLoad,
+          isOverload: confirmedRes.loadSummary.isOverload,
+          isApiCalculated: false
+        });
+      };
 
       for (let i = 0; i < deliveries.length; i++) {
         const item = deliveries[i];
 
-        // パターンA: 最終運行に混載
-        let placedInExistingTrip = false;
-        if (currentTrips.length > 0) {
+        // 現在のコースと車格または指定コースコードが異なる場合は確定して新規コースへ
+        const isCompatibleCourse = currentCourseMeta &&
+          currentCourseMeta.vehicleClass === item.vehicleClass &&
+          (!item.courseCode || !currentCourseMeta.courseCode || currentCourseMeta.courseCode === item.courseCode);
+
+        if (isCompatibleCourse && currentTrips.length > 0) {
+          const effectiveCap = Math.min(currentCourseMeta.maxCap, item.resolvedCap);
           const lastTrip = currentTrips[currentTrips.length - 1];
           const lastTripLoad = lastTrip.reduce((s, d) => s + d.loadQty, 0);
-          if (lastTripLoad + item.loadQty <= vehicleSettings.maxCap) {
+
+          // パターンA: 最終運行に混載
+          let placedInExistingTrip = false;
+          if (lastTripLoad + item.loadQty <= effectiveCap) {
             const testTrips = currentTrips.map((t, idx) => idx === currentTrips.length - 1 ? [...t, item] : [...t]);
             const testStops = buildStopsFromTrips(hubName, hubAddress, testTrips);
-            const testRes = await calculateCourseSchedule(testStops, simOptionsDemoOnly);
+            const testRes = await calculateCourseSchedule(testStops, buildSimOptsForItem(item, effectiveCap));
             if (isWithinLimits(testRes)) {
               currentTrips = testTrips;
+              currentCourseMeta.maxCap = effectiveCap;
+              if (!currentCourseMeta.courseCode && item.courseCode) currentCourseMeta.courseCode = item.courseCode;
               placedInExistingTrip = true;
             }
           }
-        }
-        if (placedInExistingTrip) continue;
+          if (placedInExistingTrip) continue;
 
-        // パターンB: 同一コース内の新運行 (設定マスターの最大運行数以内)
-        if (currentTrips.length < maxTripsLimit) {
-          const testTripsNewRun = [...currentTrips, [item]];
-          const testStopsNewRun = buildStopsFromTrips(hubName, hubAddress, testTripsNewRun);
-          const testResNewRun = await calculateCourseSchedule(testStopsNewRun, simOptionsDemoOnly);
-          if (isWithinLimits(testResNewRun)) {
-            currentTrips = testTripsNewRun;
-            continue;
+          // パターンB: 同一コース内の新運行
+          if (currentTrips.length < maxTripsLimit) {
+            const testTripsNewRun = [...currentTrips, [item]];
+            const testStopsNewRun = buildStopsFromTrips(hubName, hubAddress, testTripsNewRun);
+            const testResNewRun = await calculateCourseSchedule(testStopsNewRun, buildSimOptsForItem(item, effectiveCap));
+            if (isWithinLimits(testResNewRun)) {
+              currentTrips = testTripsNewRun;
+              currentCourseMeta.maxCap = effectiveCap;
+              if (!currentCourseMeta.courseCode && item.courseCode) currentCourseMeta.courseCode = item.courseCode;
+              continue;
+            }
           }
         }
 
-        // パターンC: 新コース確定
-        if (currentTrips.length > 0) {
-          const confirmedStops = buildStopsFromTrips(hubName, hubAddress, currentTrips);
-          const confirmedRes = await calculateCourseSchedule(confirmedStops, simOptionsDemoOnly);
-          autoGeneratedCourses.push({
-            courseTitle: `自動編成_コース${autoGeneratedCourses.length + 1} (${currentTrips.length}運行)`,
-            tripCount: currentTrips.length,
-            trips: currentTrips,
-            stops: confirmedStops,
-            totalRestraintMin: confirmedRes.totalRestraintMin,
-            totalDistKm: confirmedRes.totalDistKm,
-            maxTripLoad: confirmedRes.loadSummary.maxTripLoad,
-            isOverload: confirmedRes.loadSummary.isOverload,
-            isApiCalculated: false
-          });
-        }
+        // パターンC: 現在のコースを確定し、新しいコースを開始
+        await finalizeCurrentCourse();
         currentTrips = [[item]];
+        currentCourseMeta = {
+          courseCode: item.courseCode || "",
+          vehicleClass: item.vehicleClass,
+          vehicleLabel: item.vehicleLabel,
+          materialId: item.materialId,
+          materialType: item.materialType,
+          maxCap: item.resolvedCap,
+          tollMult: item.tollMult
+        };
       }
 
-      if (currentTrips.length > 0) {
-        const finalStops = buildStopsFromTrips(hubName, hubAddress, currentTrips);
-        const finalRes = await calculateCourseSchedule(finalStops, simOptionsDemoOnly);
-        autoGeneratedCourses.push({
-          courseTitle: `自動編成_コース${autoGeneratedCourses.length + 1} (${currentTrips.length}運行)`,
-          tripCount: currentTrips.length,
-          trips: currentTrips,
-          stops: finalStops,
-          totalRestraintMin: finalRes.totalRestraintMin,
-          totalDistKm: finalRes.totalDistKm,
-          maxTripLoad: finalRes.loadSummary.maxTripLoad,
-          isOverload: finalRes.loadSummary.isOverload,
-          isApiCalculated: false
-        });
-      }
+      await finalizeCurrentCourse();
 
       renderGeneratedCoursesUI();
       if (autoGeneratedCourses.length > 0) {
         applyGeneratedCourse(0, true);
       }
-      alert(`全${deliveries.length}件から、上限${masterSettings.maxWorkHours}h・上限${masterSettings.maxDistKm}km・最大${maxTripsLimit}運行・出来上がり時間待機を考慮し【${autoGeneratedCourses.length}コース】を自動編成しました。\n(一覧から「全コースをAPIで一括計算」「全コースを一括保存」「一括印刷/PDF」が可能です)`);
+      alert(`全${deliveries.length}件から、コース指定・車格別マテハン上限・上限${masterSettings.maxWorkHours}h・上限${masterSettings.maxDistKm}km・最大${maxTripsLimit}運行・出来上がり時間待機を考慮し【${autoGeneratedCourses.length}コース】を自動編成しました。`);
     } catch (err) {
       alert("自動コース組みエラー: " + err.message);
     }
@@ -2926,7 +3151,6 @@ function renderGeneratedCoursesUI() {
     listEl.innerHTML = "";
     return;
   }
-  const vSettings = getVehicleSettings();
   const maxWorkMin = masterSettings.maxWorkHours * 60;
   const maxDistKm = masterSettings.maxDistKm;
 
@@ -2969,8 +3193,8 @@ function renderGeneratedCoursesUI() {
       ? `<span class="tag-late">上限超過注意</span>`
       : `<span class="tag-etc">条件内OK</span>`;
     const loadTag = c.isOverload
-      ? `<span class="tag-late">積載超過(${c.maxTripLoad}/${vSettings.maxCap})</span>`
-      : `<span class="tag-load">最大積載 ${c.maxTripLoad}/${vSettings.maxCap}</span>`;
+      ? `<span class="tag-late">積載超過(${c.maxTripLoad}/${c.maxCap}${escapeHtml(c.materialType || "")})</span>`
+      : `<span class="tag-load">最大積載 ${c.maxTripLoad}/${c.maxCap}${escapeHtml(c.materialType || "")}</span>`;
     const apiBadge = c.isApiCalculated ? `<span class="tag-api">API実測・動線済</span>` : `<span class="tag-local">デモ計算</span>`;
 
     html += `
@@ -2988,7 +3212,6 @@ function renderGeneratedCoursesUI() {
   listEl.innerHTML = html;
 }
 
-// ② 自動コース一覧から全コースをAPIで一括計算 (動線ポリライン保存)
 async function calculateAllGeneratedCoursesWithApi() {
   if (!autoGeneratedCourses || autoGeneratedCourses.length === 0) {
     return alert("API計算する自動編成コースがありません。");
@@ -3002,11 +3225,9 @@ async function calculateAllGeneratedCoursesWithApi() {
   const highwayMode = document.getElementById("highwayMode").value;
   const stayMode = document.getElementById("stayMode").value;
   const uniformStay = parseInt(document.getElementById("uniformStayMin").value || "0", 10);
-  const vehicleSettings = getVehicleSettings();
   const breakRuleMode = document.getElementById("breakRuleMode").value;
   const garage = getGarageConfig();
 
-  // 概算API回数チェック
   let estimatedTotalCalls = 0;
   autoGeneratedCourses.forEach(c => {
     const uncached = c.stops.filter(s => !geocodeCache[s.address.trim()]).length;
@@ -3035,13 +3256,14 @@ async function calculateAllGeneratedCoursesWithApi() {
       if (btn) btn.textContent = `API計算中 (${i + 1} / ${autoGeneratedCourses.length})...`;
 
       const course = autoGeneratedCourses[i];
+      const vSettings = getVehicleSettings(course.vehicleClass, course.materialId, course.maxCap);
       const simRes = await calculateCourseSchedule(course.stops, {
         startTimeStr,
         highwayMode,
         stayMode,
         uniformStay,
-        vehicleMult: vehicleSettings.tollMult,
-        maxCap: vehicleSettings.maxCap,
+        vehicleMult: vSettings.tollMult,
+        maxCap: vSettings.maxCap,
         breakRuleMode,
         garage,
         useGoogleApi: true,
@@ -3073,19 +3295,25 @@ function applyGeneratedCourse(idx, forceDemo = false) {
   const target = autoGeneratedCourses[idx];
   if (!target) return;
   document.getElementById("courseNameInput").value = target.courseTitle;
+  if (target.vehicleClass) document.getElementById("vehicleClass").value = target.vehicleClass;
+  if (target.materialId) document.getElementById("courseMaterialType").value = target.materialId;
+  if (target.maxCap) document.getElementById("maxCapacityInput").value = target.maxCap;
+  updateKpiLabelsFromMaster();
+
   stops = JSON.parse(JSON.stringify(target.stops));
   renderStops();
 
   const cachedApi = apiCalculatedCourseCache[idx];
+  const vSettings = getVehicleSettings(target.vehicleClass, target.materialId, target.maxCap);
   if (cachedApi && cachedApi.simResult && !forceDemo) {
-    renderSimulationResult(cachedApi.simResult, getGarageConfig(), getVehicleSettings());
+    renderSimulationResult(cachedApi.simResult, getGarageConfig(), vSettings);
   } else {
     runSimulation(true);
   }
 }
 
 // ==========================================
-// ② 一括印刷 / PDF出力 (API動線ポリライン反映)
+// ② 一括印刷 / PDF出力
 // ==========================================
 async function printAllGeneratedCourses() {
   if (!autoGeneratedCourses || autoGeneratedCourses.length === 0) {
@@ -3104,23 +3332,9 @@ async function printAllGeneratedCourses() {
     const highwayMode = document.getElementById("highwayMode").value;
     const stayMode = document.getElementById("stayMode").value;
     const uniformStay = parseInt(document.getElementById("uniformStayMin").value || "0", 10);
-    const vehicleSettings = getVehicleSettings();
     const breakRuleMode = document.getElementById("breakRuleMode").value;
     const garage = getGarageConfig();
     const maxWorkMin = masterSettings.maxWorkHours * 60;
-
-    const simOptions = {
-      startTimeStr,
-      highwayMode,
-      stayMode,
-      uniformStay,
-      vehicleMult: vehicleSettings.tollMult,
-      maxCap: vehicleSettings.maxCap,
-      breakRuleMode,
-      garage,
-      useGoogleApi: false,
-      apiKey: ""
-    };
 
     const batchContainer = document.getElementById("batchPrintContainer");
     batchContainer.innerHTML = "";
@@ -3130,11 +3344,22 @@ async function printAllGeneratedCourses() {
     const calculatedList = [];
     for (let i = 0; i < autoGeneratedCourses.length; i++) {
       const course = autoGeneratedCourses[i];
-      // API計算済みキャッシュがあれば実道路動線・実測値を優先使用
+      const vehicleSettings = getVehicleSettings(course.vehicleClass, course.materialId, course.maxCap);
       const cached = apiCalculatedCourseCache[i];
       const simResult = (cached && cached.simResult)
         ? cached.simResult
-        : await calculateCourseSchedule(course.stops, simOptions);
+        : await calculateCourseSchedule(course.stops, {
+            startTimeStr,
+            highwayMode,
+            stayMode,
+            uniformStay,
+            vehicleMult: vehicleSettings.tollMult,
+            maxCap: vehicleSettings.maxCap,
+            breakRuleMode,
+            garage,
+            useGoogleApi: false,
+            apiKey: ""
+          });
 
       calculatedList.push({ course, simResult });
 
@@ -3155,10 +3380,10 @@ async function printAllGeneratedCourses() {
         <div class="batch-header">
           <div>
             <h1>運行指示書: ${escapeHtml(course.courseTitle)} (${i + 1} / ${autoGeneratedCourses.length}) ${simResult.usedGoogleApi ? "[API動線反映]" : ""}</h1>
-            <div style="font-size: 7.8pt; color: #475569;">作成ツール: 配送ルート・稼働時間シミュレーター Ver3.3</div>
+            <div style="font-size: 7.8pt; color: #475569;">作成ツール: 配送ルート・稼働時間シミュレーター Ver3.4</div>
           </div>
           <div class="batch-meta">
-            運行日付: ${runDate} | 車格: ${vehicleSettings.label} (上限${vehicleSettings.maxCap}) | 稼働上限: ${masterSettings.maxWorkHours}h / 距離上限: ${masterSettings.maxDistKm}km
+            運行日付: ${runDate} | 車格: ${vehicleSettings.label} (${vehicleSettings.materialName}上限${vehicleSettings.maxCap}) | 稼働上限: ${masterSettings.maxWorkHours}h / 距離上限: ${masterSettings.maxDistKm}km
           </div>
         </div>
         <div class="batch-grid">
@@ -3169,7 +3394,7 @@ async function printAllGeneratedCourses() {
                 <div class="kpi-val">${workStr}</div>
               </div>
               <div class="kpi-box">
-                <div class="kpi-label">積載判定(運行別最大)</div>
+                <div class="kpi-label">積載判定(${vehicleSettings.materialName}上限)</div>
                 <div class="kpi-val">${loadStr}</div>
               </div>
               <div class="kpi-box">
@@ -3268,7 +3493,7 @@ function printA4Report() {
 
   document.getElementById("printCourseTitle").textContent = `運行指示書: ${courseName}`;
   document.getElementById("printMetaInfo").textContent =
-    `運行日付: ${runDate} | 車格: ${vSettings.label} (上限${vSettings.maxCap}) | 稼働上限: ${masterSettings.maxWorkHours}h / 距離上限: ${masterSettings.maxDistKm}km`;
+    `運行日付: ${runDate} | 車格: ${vSettings.label} (${vSettings.materialName}上限${vSettings.maxCap}) | 稼働上限: ${masterSettings.maxWorkHours}h / 距離上限: ${masterSettings.maxDistKm}km`;
 
   document.body.classList.add("preparing-print");
   setTimeout(() => {
@@ -3307,18 +3532,38 @@ function handleFileUpload(event) {
         return;
       }
 
-      stops = rows.map((row, i) => ({
-        name: String(row["納品先名称"] || row["名称"] || row["地点名"] || `地点${i + 1}`).trim(),
-        address: String(row["住所"] || "").trim(),
-        loadQty: parseFloat(row["荷量"] || row["積載量"] || row["個数"] || "0") || 0,
-        stayMin: parseInt(row["滞在時間_分"] || row["滞在時間"] || row["滞在時間(分)"] || "20", 10) || 0,
-        targetTime: String(row["指定着時間"] || row["到着指定時間"] || "").trim(),
-        readyTime: String(row["荷物出来上がり時間"] || row["出来上がり時間"] || row["出来上がり"] || "").trim(),
-        courseCode: String(row["コース"] || "").trim(),
-        vehicleClass: String(row["車格"] || "").trim(),
-        note: String(row["納品備考"] || row["備考"] || "").trim(),
-        useHighway: isHighwayFlagTrue(row["高速使用"] !== undefined ? row["高速使用"] : row["行き高速"])
-      }));
+      stops = rows.map((row, i) => {
+        const rawVeh = String(row["車格"] || "").trim();
+        const resolvedVeh = rawVeh ? resolveVehicleByNameOrId(rawVeh).id : "";
+        return {
+          name: String(row["納品先名称"] || row["名称"] || row["地点名"] || `地点${i + 1}`).trim(),
+          address: String(row["住所"] || "").trim(),
+          loadQty: parseFloat(row["荷量"] || row["積載量"] || row["個数"] || "0") || 0,
+          stayMin: parseInt(row["滞在時間_分"] || row["滞在時間"] || row["滞在時間(分)"] || "20", 10) || 0,
+          targetTime: String(row["指定着時間"] || row["到着指定時間"] || "").trim(),
+          readyTime: String(row["荷物出来上がり時間"] || row["出来上がり時間"] || row["出来上がり"] || "").trim(),
+          courseCode: String(row["コース"] || "").trim(),
+          vehicleClass: resolvedVeh,
+          materialType: String(row["マテハン種別"] || row["マテハン"] || "").trim(),
+          customCap: row["積載上限値"] !== undefined && row["積載上限値"] !== "" ? String(row["積載上限値"]) : "",
+          note: String(row["納品備考"] || row["備考"] || "").trim(),
+          useHighway: isHighwayFlagTrue(row["高速使用"] !== undefined ? row["高速使用"] : row["行き高速"])
+        };
+      });
+
+      // 先頭有効行に車格・マテハン・上限があれば全体設定にも反映
+      const firstRuleStop = stops.find(s => s.vehicleClass || s.materialType || s.customCap);
+      if (firstRuleStop) {
+        if (firstRuleStop.vehicleClass) document.getElementById("vehicleClass").value = firstRuleStop.vehicleClass;
+        if (firstRuleStop.materialType) {
+          const mat = resolveMaterialByNameOrId(firstRuleStop.materialType);
+          document.getElementById("courseMaterialType").value = mat.id;
+        }
+        onVehicleOrMaterialRuleChange();
+        if (firstRuleStop.customCap) {
+          document.getElementById("maxCapacityInput").value = firstRuleStop.customCap;
+        }
+      }
 
       renderStops();
       runSimulation();
