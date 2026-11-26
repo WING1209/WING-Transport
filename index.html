@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>配送ルート・稼働時間シミュレーター Ver3.2</title>
+<title>配送ルート・稼働時間シミュレーター Ver3.3</title>
 <!-- Excel / CSV 解析用ライブラリ (SheetJS) -->
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
 <!-- 地図表示用ライブラリ (Leaflet) -->
@@ -67,14 +67,14 @@ header h1 {
   border: 1px solid var(--border);
 }
 .container {
-  max-width: 1500px;
+  max-width: 1540px;
   margin: 0 auto;
   padding: 20px;
   display: grid;
-  grid-template-columns: 1.2fr 0.8fr;
+  grid-template-columns: 1.22fr 0.78fr;
   gap: 20px;
 }
-@media (max-width: 1080px) {
+@media (max-width: 1120px) {
   .container { grid-template-columns: 1fr; }
 }
 .card {
@@ -97,24 +97,25 @@ header h1 {
 }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-@media (max-width: 640px) {
-  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+@media (max-width: 780px) {
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
 }
 label {
   display: block;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: var(--muted);
   margin-bottom: 4px;
 }
 input[type="text"], input[type="date"], input[type="time"],
 input[type="number"], select {
   width: 100%;
-  padding: 8px 10px;
+  padding: 7px 9px;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--text);
-  font-size: 0.9rem;
+  font-size: 0.88rem;
 }
 input:focus, select:focus {
   outline: none;
@@ -124,7 +125,7 @@ input:focus, select:focus {
   padding: 8px 13px;
   border: none;
   border-radius: 6px;
-  font-size: 0.85rem;
+  font-size: 0.84rem;
   font-weight: bold;
   cursor: pointer;
   display: inline-flex;
@@ -137,15 +138,16 @@ input:focus, select:focus {
 .btn-primary { background: var(--primary); color: #fff; }
 .btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
 .btn-accent { background: var(--accent); color: #022c22; }
-.btn-accent:hover:not(:disabled) { filter: brightness(1.1); }
+.btn-accent:hover:not(:disabled) { filter: brightness(1.08); }
 .btn-purple { background: var(--purple); color: #fff; }
-.btn-purple:hover:not(:disabled) { filter: brightness(1.1); }
+.btn-purple:hover:not(:disabled) { filter: brightness(1.08); }
+.btn-warn { background: var(--warn); color: #000; }
+.btn-warn:hover:not(:disabled) { filter: brightness(1.05); }
 .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
 .btn-outline:hover:not(:disabled) { background: var(--panel-light); }
 .btn-danger { background: rgba(239, 68, 68, 0.2); border: 1px solid var(--danger); color: #fca5a5; padding: 5px 9px; font-size: 0.78rem; }
-.btn-sm { padding: 5px 10px; font-size: 0.8rem; }
+.btn-sm { padding: 5px 10px; font-size: 0.78rem; }
 
-/* 車庫設定ボックス */
 .garage-box {
   background: rgba(168, 85, 247, 0.08);
   border: 1px dashed rgba(168, 85, 247, 0.5);
@@ -176,7 +178,6 @@ input:focus, select:focus {
   .garage-fields { grid-template-columns: 1fr; }
 }
 
-/* 地点リストと高速チェック区間 */
 .stop-item {
   background: rgba(15, 23, 42, 0.75);
   border: 1px solid var(--border);
@@ -189,11 +190,13 @@ input:focus, select:focus {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 .stop-badge {
   background: var(--primary);
   color: #fff;
-  font-size: 0.76rem;
+  font-size: 0.75rem;
   font-weight: bold;
   padding: 2px 8px;
   border-radius: 12px;
@@ -202,12 +205,19 @@ input:focus, select:focus {
 .stop-badge.end { background: var(--warn); color: #000; }
 .stop-fields {
   display: grid;
-  grid-template-columns: 1fr 1.3fr 72px 102px 76px;
+  grid-template-columns: 1.1fr 1.3fr 72px 96px 72px;
   gap: 7px;
 }
-@media (max-width: 780px) {
-  .stop-fields { grid-template-columns: 1fr 1fr; }
+.stop-fields-sub {
+  display: grid;
+  grid-template-columns: 0.9fr 0.9fr 96px 1.4fr;
+  gap: 7px;
+  margin-top: 7px;
 }
+@media (max-width: 820px) {
+  .stop-fields, .stop-fields-sub { grid-template-columns: 1fr 1fr; }
+}
+
 .segment-connector {
   display: flex;
   align-items: center;
@@ -232,7 +242,7 @@ input:focus, select:focus {
   border: 1px solid var(--border);
   padding: 4px 12px;
   border-radius: 20px;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -251,7 +261,6 @@ input:focus, select:focus {
   cursor: pointer;
 }
 
-/* サマリー KPI */
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -264,31 +273,31 @@ input:focus, select:focus {
   border-radius: 8px;
   padding: 10px 12px;
 }
-.kpi-label { font-size: 0.76rem; color: var(--muted); }
-.kpi-val { font-size: 1.15rem; font-weight: bold; margin-top: 2px; color: #fff; }
+.kpi-label { font-size: 0.74rem; color: var(--muted); }
+.kpi-val { font-size: 1.05rem; font-weight: bold; margin-top: 2px; color: #fff; }
 .kpi-val.accent { color: var(--accent); }
 .kpi-val.warn { color: var(--warn); }
 .kpi-val.danger { color: var(--danger); }
 
-/* タイムラインテーブル */
 table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
 }
 th, td {
   border-bottom: 1px solid var(--border);
-  padding: 8px 5px;
+  padding: 7px 5px;
   text-align: left;
   vertical-align: top;
 }
 th { color: var(--muted); font-weight: normal; }
+
 .tag-etc {
   display: inline-block;
   background: rgba(59, 130, 246, 0.25);
   border: 1px solid var(--primary);
   color: #93c5fd;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   padding: 1px 5px;
   border-radius: 4px;
 }
@@ -296,7 +305,7 @@ th { color: var(--muted); font-weight: normal; }
   display: inline-block;
   background: rgba(148, 163, 184, 0.2);
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   padding: 1px 5px;
   border-radius: 4px;
 }
@@ -305,7 +314,7 @@ th { color: var(--muted); font-weight: normal; }
   background: rgba(168, 85, 247, 0.25);
   border: 1px solid var(--purple);
   color: #e9d5ff;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   padding: 1px 6px;
   border-radius: 4px;
   font-weight: bold;
@@ -315,7 +324,7 @@ th { color: var(--muted); font-weight: normal; }
   background: rgba(245, 158, 11, 0.22);
   border: 1px solid var(--warn);
   color: #fcd34d;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   padding: 1px 5px;
   border-radius: 4px;
 }
@@ -324,7 +333,7 @@ th { color: var(--muted); font-weight: normal; }
   background: rgba(239, 68, 68, 0.25);
   border: 1px solid var(--danger);
   color: #fca5a5;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   padding: 1px 5px;
   border-radius: 4px;
   font-weight: bold;
@@ -334,14 +343,25 @@ th { color: var(--muted); font-weight: normal; }
   background: rgba(16, 185, 129, 0.18);
   border: 1px solid var(--accent);
   color: #6ee7b7;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   padding: 1px 5px;
   border-radius: 4px;
 }
+.tag-api {
+  display: inline-block;
+  background: rgba(59, 130, 246, 0.2);
+  border: 1px solid #60a5fa;
+  color: #bfdbfe;
+  font-size: 0.7rem;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: bold;
+}
 .row-break { background: rgba(168, 85, 247, 0.08); }
 .row-garage { background: rgba(51, 65, 85, 0.35); }
+
 #map {
-  height: 290px;
+  height: 300px;
   width: 100%;
   border-radius: 8px;
   border: 1px solid var(--border);
@@ -355,6 +375,13 @@ th { color: var(--muted); font-weight: normal; }
   padding: 10px 14px;
   margin-bottom: 14px;
   font-size: 0.84rem;
+}
+.master-bar {
+  background: rgba(14, 165, 233, 0.09);
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
 }
 .course-bar {
   background: rgba(16, 185, 129, 0.08);
@@ -381,7 +408,7 @@ th { color: var(--muted); font-weight: normal; }
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
 }
 .flex-row {
   display: flex;
@@ -389,14 +416,21 @@ th { color: var(--muted); font-weight: normal; }
   align-items: center;
   flex-wrap: wrap;
 }
+.preset-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.78rem;
+}
 
-/* ==========================================
-   印刷プレビュー準備用 & A4横1枚収まりスタイル
-   ========================================== */
+/* ====== 印刷・A4横1枚出力スタイル ====== */
 .print-only-header { display: none; }
 #batchPrintContainer { display: none; }
 
-/* 単一コース印刷モード */
 body.preparing-print header,
 body.preparing-print #leftInputColumn,
 body.preparing-print .no-print {
@@ -436,7 +470,7 @@ body.preparing-print .print-only-header h1 {
   color: #000;
 }
 body.preparing-print .print-meta {
-  font-size: 8.5pt;
+  font-size: 8.2pt;
   color: #333;
   text-align: right;
 }
@@ -467,21 +501,20 @@ body.preparing-print .kpi-box {
   padding: 3px 5px !important;
   border-radius: 4px !important;
 }
-body.preparing-print .kpi-label { color: #475569 !important; font-size: 6.2pt !important; line-height: 1.2; }
-body.preparing-print .kpi-val { color: #000000 !important; font-size: 8.8pt !important; margin-top: 1px !important; }
+body.preparing-print .kpi-label { color: #475569 !important; font-size: 6pt !important; line-height: 1.2; }
+body.preparing-print .kpi-val { color: #000000 !important; font-size: 8.2pt !important; margin-top: 1px !important; }
 body.preparing-print #highwaySummaryBox {
   background: #f8fafc !important;
   border: 1px solid #94a3b8 !important;
   color: #000 !important;
   padding: 3px 5px !important;
   margin-bottom: 5px !important;
-  font-size: 6.8pt !important;
+  font-size: 6.6pt !important;
   line-height: 1.25 !important;
   border-radius: 4px !important;
 }
-body.preparing-print #highwaySummaryText { color: #1e293b !important; margin-top: 1px !important; }
 body.preparing-print table {
-  font-size: 6.6pt !important;
+  font-size: 6.4pt !important;
   line-height: 1.2 !important;
   table-layout: fixed;
   width: 100%;
@@ -499,15 +532,14 @@ body.preparing-print td {
   color: #000000 !important;
   word-wrap: break-word;
 }
-body.preparing-print td span { font-size: 6pt !important; color: #334155 !important; }
-body.preparing-print .tag-etc { background: #dbeafe !important; border: 1px solid #2563eb !important; color: #1e40af !important; font-size: 5.8pt !important; padding: 0 3px !important; }
-body.preparing-print .tag-local { background: #f1f5f9 !important; border: 1px solid #94a3b8 !important; color: #334155 !important; font-size: 5.8pt !important; padding: 0 3px !important; }
-body.preparing-print .tag-break { background: #f3e8ff !important; border: 1px solid #7e22ce !important; color: #581c87 !important; font-size: 5.8pt !important; padding: 0 3px !important; }
-body.preparing-print .tag-wait { background: #fef3c7 !important; border: 1px solid #d97706 !important; color: #92400e !important; font-size: 5.8pt !important; padding: 0 3px !important; }
-body.preparing-print .tag-late { background: #fee2e2 !important; border: 1px solid #dc2626 !important; color: #991b1b !important; font-size: 5.8pt !important; padding: 0 3px !important; }
-body.preparing-print .tag-load { background: #d1fae5 !important; border: 1px solid #059669 !important; color: #065f46 !important; font-size: 5.8pt !important; padding: 0 3px !important; }
+body.preparing-print td span { font-size: 5.8pt !important; color: #334155 !important; }
+body.preparing-print .tag-etc { background: #dbeafe !important; border: 1px solid #2563eb !important; color: #1e40af !important; font-size: 5.6pt !important; padding: 0 3px !important; }
+body.preparing-print .tag-local { background: #f1f5f9 !important; border: 1px solid #94a3b8 !important; color: #334155 !important; font-size: 5.6pt !important; padding: 0 3px !important; }
+body.preparing-print .tag-break { background: #f3e8ff !important; border: 1px solid #7e22ce !important; color: #581c87 !important; font-size: 5.6pt !important; padding: 0 3px !important; }
+body.preparing-print .tag-wait { background: #fef3c7 !important; border: 1px solid #d97706 !important; color: #92400e !important; font-size: 5.6pt !important; padding: 0 3px !important; }
+body.preparing-print .tag-late { background: #fee2e2 !important; border: 1px solid #dc2626 !important; color: #991b1b !important; font-size: 5.6pt !important; padding: 0 3px !important; }
+body.preparing-print .tag-load { background: #d1fae5 !important; border: 1px solid #059669 !important; color: #065f46 !important; font-size: 5.6pt !important; padding: 0 3px !important; }
 
-/* 一括印刷（複数コース）モード */
 body.preparing-batch-print {
   background: #ffffff !important;
   color: #000000 !important;
@@ -552,7 +584,7 @@ body.preparing-batch-print #batchPrintContainer {
   color: #000;
 }
 .batch-meta {
-  font-size: 8.5pt;
+  font-size: 8.2pt;
   color: #333;
   text-align: right;
 }
@@ -580,20 +612,20 @@ body.preparing-batch-print #batchPrintContainer {
   padding: 3px 5px !important;
   border-radius: 4px !important;
 }
-.batch-page .kpi-label { color: #475569 !important; font-size: 6.2pt !important; line-height: 1.2; }
-.batch-page .kpi-val { color: #000000 !important; font-size: 8.8pt !important; margin-top: 1px !important; }
+.batch-page .kpi-label { color: #475569 !important; font-size: 6pt !important; line-height: 1.2; }
+.batch-page .kpi-val { color: #000000 !important; font-size: 8.2pt !important; margin-top: 1px !important; }
 .batch-summary-box {
   background: #f8fafc !important;
   border: 1px solid #94a3b8 !important;
   color: #000 !important;
   padding: 3px 5px !important;
   margin-bottom: 5px !important;
-  font-size: 6.8pt !important;
+  font-size: 6.6pt !important;
   line-height: 1.25 !important;
   border-radius: 4px !important;
 }
 .batch-page table {
-  font-size: 6.6pt !important;
+  font-size: 6.4pt !important;
   line-height: 1.2 !important;
   table-layout: fixed;
   width: 100%;
@@ -611,13 +643,13 @@ body.preparing-batch-print #batchPrintContainer {
   color: #000000 !important;
   word-wrap: break-word;
 }
-.batch-page td span { font-size: 6pt !important; color: #334155 !important; }
-.batch-page .tag-etc { background: #dbeafe !important; border: 1px solid #2563eb !important; color: #1e40af !important; font-size: 5.8pt !important; padding: 0 3px !important; }
-.batch-page .tag-local { background: #f1f5f9 !important; border: 1px solid #94a3b8 !important; color: #334155 !important; font-size: 5.8pt !important; padding: 0 3px !important; }
-.batch-page .tag-break { background: #f3e8ff !important; border: 1px solid #7e22ce !important; color: #581c87 !important; font-size: 5.8pt !important; padding: 0 3px !important; }
-.batch-page .tag-wait { background: #fef3c7 !important; border: 1px solid #d97706 !important; color: #92400e !important; font-size: 5.8pt !important; padding: 0 3px !important; }
-.batch-page .tag-late { background: #fee2e2 !important; border: 1px solid #dc2626 !important; color: #991b1b !important; font-size: 5.8pt !important; padding: 0 3px !important; }
-.batch-page .tag-load { background: #d1fae5 !important; border: 1px solid #059669 !important; color: #065f46 !important; font-size: 5.8pt !important; padding: 0 3px !important; }
+.batch-page td span { font-size: 5.8pt !important; color: #334155 !important; }
+.batch-page .tag-etc { background: #dbeafe !important; border: 1px solid #2563eb !important; color: #1e40af !important; font-size: 5.6pt !important; padding: 0 3px !important; }
+.batch-page .tag-local { background: #f1f5f9 !important; border: 1px solid #94a3b8 !important; color: #334155 !important; font-size: 5.6pt !important; padding: 0 3px !important; }
+.batch-page .tag-break { background: #f3e8ff !important; border: 1px solid #7e22ce !important; color: #581c87 !important; font-size: 5.6pt !important; padding: 0 3px !important; }
+.batch-page .tag-wait { background: #fef3c7 !important; border: 1px solid #d97706 !important; color: #92400e !important; font-size: 5.6pt !important; padding: 0 3px !important; }
+.batch-page .tag-late { background: #fee2e2 !important; border: 1px solid #dc2626 !important; color: #991b1b !important; font-size: 5.6pt !important; padding: 0 3px !important; }
+.batch-page .tag-load { background: #d1fae5 !important; border: 1px solid #059669 !important; color: #065f46 !important; font-size: 5.6pt !important; padding: 0 3px !important; }
 
 @media print {
   @page { size: A4 landscape; margin: 6mm; }
@@ -628,7 +660,7 @@ body.preparing-batch-print #batchPrintContainer {
 <body>
 <header>
   <h1>
-    配送ルート・稼働時間シミュレーター <span style="font-size:0.75rem; color:#94a3b8;">Ver3.2</span>
+    配送ルート・稼働時間シミュレーター <span style="font-size:0.75rem; color:#94a3b8;">Ver3.3</span>
     <span class="badge" id="modeBadge">デモシミュレーター稼働中</span>
     <span class="badge-quota" id="quotaBadge">本日 API 利用: 0 / 100 回</span>
   </h1>
@@ -643,9 +675,9 @@ body.preparing-batch-print #batchPrintContainer {
 </header>
 
 <div class="container">
-  <!-- 左カラム: 条件入力 -->
+  <!-- 左カラム -->
   <div id="leftInputColumn">
-    <!-- API 切替オプション -->
+    <!-- API 切替 -->
     <div class="api-bar">
       <div class="flex-row" style="justify-content: space-between;">
         <span><strong>動作モード:</strong> <span id="modeDesc">現在はデモ計算エンジンで動作しています。</span></span>
@@ -659,17 +691,66 @@ body.preparing-batch-print #batchPrintContainer {
           <button class="btn btn-outline btn-sm" onclick="clearApiKey()">解除</button>
         </div>
         <div style="font-size: 0.76rem; color: var(--muted); margin-top: 6px;">
-          ※1日のAPI呼び出し上限は安全のため <strong>100回</strong> に制限されています(日付が変わると自動リセットされます)。
+          ※1日のAPI呼び出し上限は安全のため <strong>100回</strong> に制限されています(日付が変わると自動リセット)。
         </div>
       </div>
     </div>
 
-    <!-- お任せ自動コース組み (CSV一括読込 → 往復高速・最大3運行・12時間以内・車格積載混載対応) -->
+    <!-- ③ 設定マスター (マテハン上限・稼働時間限界・総距離上限・運行数上限) -->
+    <div class="master-bar">
+      <div class="flex-row" style="justify-content: space-between; margin-bottom: 8px;">
+        <span style="font-weight:bold; font-size:0.92rem; color:#7dd3fc;">■ 設定マスター(マテハン上限・お任せ配車キー設定)</span>
+        <button class="btn btn-outline btn-sm" onclick="resetMasterSettings()">標準値に戻す</button>
+      </div>
+
+      <div class="grid-3" style="margin-bottom: 10px;">
+        <div>
+          <label>▣ 稼働時間限界値 (時間 / 例: 11, 12)</label>
+          <input type="number" id="masterMaxWorkHours" value="12" min="1" max="24" step="0.5" onchange="onMasterParamChange()" />
+        </div>
+        <div>
+          <label>▣ 距離上限値 (総配送距離 km / 例: 200)</label>
+          <input type="number" id="masterMaxDistKm" value="200" min="1" max="2000" step="5" onchange="onMasterParamChange()" />
+        </div>
+        <div>
+          <label>▣ 運行数上限 (最大便数 / 任意設定)</label>
+          <input type="number" id="masterMaxTrips" value="3" min="1" max="15" step="1" onchange="onMasterParamChange()" />
+        </div>
+      </div>
+
+      <div style="border-top: 1px dashed rgba(148,163,184,0.35); padding-top: 8px;">
+        <div class="flex-row" style="justify-content: space-between; margin-bottom: 6px;">
+          <span style="font-size:0.8rem; color:#bae6fd; font-weight:bold;">マテハン種別と上限値設定(個数 / カート / カゴ車 など)</span>
+          <span style="font-size:0.74rem; color:var(--muted);">選択中のマテハン上限が積載上限に反映されます</span>
+        </div>
+        <div class="grid-3" style="margin-bottom: 8px;">
+          <div>
+            <label>適用マテハン種別</label>
+            <select id="activeMaterialSelect" onchange="onActiveMaterialChange()"></select>
+          </div>
+          <div>
+            <label>新規マテハン名称</label>
+            <input type="text" id="newMatName" placeholder="例: パレット" />
+          </div>
+          <div>
+            <label>上限値</label>
+            <div class="flex-row">
+              <input type="number" id="newMatLimit" value="20" min="1" step="1" style="flex:1;" />
+              <button class="btn btn-primary btn-sm" onclick="addOrUpdateMaterial()">追加/更新</button>
+            </div>
+          </div>
+        </div>
+        <div id="materialChipsList" class="flex-row"></div>
+      </div>
+    </div>
+
+    <!-- ① お任せ自動コース組み (複数出着車庫・荷物出来上がり時間・コース/車格/納品備考対応) -->
     <div class="auto-build-bar">
-      <div style="font-weight: bold; font-size:0.92rem; margin-bottom:8px; color: #d8b4fe; display: flex; justify-content: space-between; align-items:center; flex-wrap:wrap; gap:6px;">
-        <span>■ お任せ自動コース組み (往復高速判定・荷量混載・最大3運行・拘束12h以内)</span>
+      <div style="font-weight: bold; font-size:0.92rem; margin-bottom:8px; color: #d8b4fe; display: flex; justify-content: space-between; align-items:center; flex-wrap:wrap; gap: 6px;">
+        <span>■ お任せ自動コース組み (複数出着車庫・出来上がり時間待機・マスター条件対応)</span>
         <button class="btn btn-outline btn-sm" onclick="downloadBlankFormatCSV()">空フォーマット CSV出力</button>
       </div>
+
       <div class="grid-2" style="margin-bottom:8px;">
         <div>
           <label>起点名称(センター・倉庫等)</label>
@@ -680,22 +761,52 @@ body.preparing-batch-print #batchPrintContainer {
           <input type="text" id="hubAddressInput" value="埼玉県八潮市大瀬" placeholder="例: 埼玉県八潮市大瀬" />
         </div>
       </div>
+
+      <!-- 複数出着車庫地登録エリア -->
+      <div style="background: rgba(15,23,42,0.55); border: 1px solid rgba(168,85,247,0.35); border-radius: 8px; padding: 8px 10px; margin-bottom: 8px;">
+        <div class="flex-row" style="justify-content: space-between; margin-bottom: 6px;">
+          <span style="font-size: 0.8rem; font-weight: bold; color: #e9d5ff;">出着車庫地マスタ(複数登録・自動編成時の出着車庫選択)</span>
+          <select id="autoHubGarageSelect" style="width: auto; min-width: 220px; padding: 4px 8px; font-size: 0.8rem;" onchange="onAutoHubGarageChange()"></select>
+        </div>
+        <div class="grid-3">
+          <div>
+            <label>車庫名称</label>
+            <input type="text" id="newGarageName" placeholder="例: 草加車庫" />
+          </div>
+          <div>
+            <label>車庫住所</label>
+            <input type="text" id="newGarageAddress" placeholder="例: 埼玉県草加市..." />
+          </div>
+          <div>
+            <label>センターまで移動(分 / km)</label>
+            <div class="flex-row">
+              <input type="number" id="newGarageMin" value="20" min="0" step="5" style="width:62px;" title="移動時間(分)" />
+              <input type="number" id="newGarageKm" value="7.0" min="0" step="0.5" style="width:72px;" title="移動距離(km)" />
+              <button class="btn btn-purple btn-sm" onclick="addGaragePreset()">登録</button>
+            </div>
+          </div>
+        </div>
+        <div id="garagePresetChips" class="flex-row" style="margin-top: 6px;"></div>
+      </div>
+
       <div class="flex-row" style="justify-content: space-between;">
         <span style="font-size:0.75rem; color:var(--muted);">
-          ※CSVの「行き高速」「帰り高速」に<strong>使用</strong>を入れると往復の高速時間・料金を反映し、全条件(12h以内・積載・時間枠・休憩)で自動編成します(API消費0)。
+          ※CSVに「コース」「車格」「納品備考」「荷物出来上がり時間」があれば反映します。自動編成後はAPI消費0で一覧表示し、一覧から一括API計算＆一括保存が可能です。
         </span>
         <label class="btn btn-purple btn-sm" style="margin:0; cursor:pointer;">
-          納品先 CSV 読込 &amp; 自動コース作成
+          納品先 CSV/Excel 読込 &amp; 自動コース作成
           <input type="file" id="autoCourseCsvInput" accept=".csv, .xlsx, .xls" style="display: none;" onchange="handleAutoCourseCSV(event)" />
         </label>
       </div>
+
+      <!-- ② 自動編成コース一覧 + 一括API計算 + 一括保存 + 一括PDF印刷 -->
       <div id="generatedCoursesList"></div>
     </div>
 
-    <!-- コース管理(保存・呼出 JSON 書き出し/読み込み) -->
+    <!-- コース管理(保存・呼出・JSON書き出し/読み込み) -->
     <div class="course-bar">
       <div style="font-weight: bold; font-size:0.9rem; margin-bottom:8px; color: #6ee7b7;">
-        ■ コース保存・セーブデータ管理(コース名をキーに一括保存)
+        ■ コース保存・セーブデータ管理(コース名をキーに保存・一括保存対応)
       </div>
       <div class="grid-2" style="margin-bottom:8px;">
         <div>
@@ -710,12 +821,12 @@ body.preparing-batch-print #batchPrintContainer {
         <div>
           <label>現在のコース名 (保存キー)</label>
           <div class="flex-row">
-            <input type="text" id="courseNameInput" placeholder="例: 八潮1コース目(3運行)" style="flex:1;" />
+            <input type="text" id="courseNameInput" placeholder="例: 八潮1コース目" style="flex:1;" />
             <button class="btn btn-primary btn-sm" onclick="saveCurrentCourse()">コース保存</button>
           </div>
         </div>
       </div>
-      <div class="flex-row" style="justify-content: flex-end; border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 8px;">
+      <div class="flex-row" style="justify-content: flex-end; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
         <span style="font-size:0.78rem; color:var(--muted); margin-right: auto;">
           全コースデータのバックアップ・共有:
         </span>
@@ -727,7 +838,7 @@ body.preparing-batch-print #batchPrintContainer {
       </div>
     </div>
 
-    <!-- 基本条件詳細設定 -->
+    <!-- 1. 運行日時・車格・休憩ルール -->
     <div class="card">
       <h2>1. 運行日時・車格(積載上限)・休憩ルール設定</h2>
       <div class="grid-3">
@@ -740,15 +851,15 @@ body.preparing-batch-print #batchPrintContainer {
           <input type="time" id="startTime" value="07:00" />
         </div>
         <div>
-          <label>車格 / 最大積載数(4t=22 / 3t=12)</label>
+          <label>車格 / 最大積載上限</label>
           <div class="flex-row">
             <select id="vehicleClass" onchange="onVehicleClassChange()" style="flex:1.4;">
-              <option value="4t" selected>4t車(標準最大: 22)</option>
-              <option value="3t">3t車(標準最大: 12)</option>
-              <option value="2t">2t車(標準最大: 8)</option>
-              <option value="10t">10t 大型(標準最大: 36)</option>
+              <option value="4t" selected>4t車(標準: 22)</option>
+              <option value="3t">3t車(標準: 12)</option>
+              <option value="2t">2t車(標準: 8)</option>
+              <option value="10t">10t 大型(標準: 36)</option>
             </select>
-            <input type="number" id="maxCapacityInput" value="22" min="1" step="1" style="width: 72px;" title="1運行あたりの最大積載数" />
+            <input type="number" id="maxCapacityInput" value="22" min="1" step="1" style="width: 76px;" title="1運行あたりの最大積載上限" />
           </div>
         </div>
       </div>
@@ -757,7 +868,7 @@ body.preparing-batch-print #batchPrintContainer {
           <label>高速道路の使用ルール</label>
           <select id="highwayMode" onchange="renderStops()">
             <option value="auto">自動 (22km以上の区間で往復とも自動使用)</option>
-            <option value="manual" selected>手動 (CSV指定 / 地点間チェックで指定)</option>
+            <option value="manual" selected>手動(CSV指定/地点間チェックで指定)</option>
           </select>
         </div>
         <div>
@@ -773,28 +884,28 @@ body.preparing-batch-print #batchPrintContainer {
         <div>
           <label>休憩取得ルール (最短30分単位)</label>
           <select id="breakRuleMode">
-            <option value="auto60" selected>自動最適配置(合計60分 / 30分単位)</option>
+            <option value="auto60" selected>自動最適配置(合計60分/30分単位)</option>
             <option value="none">休憩なし (0分)</option>
           </select>
         </div>
       </div>
     </div>
 
-    <!-- 地点リスト + 車庫設定 -->
+    <!-- 2. 車庫・配送ルート地点設定 -->
     <div class="card">
       <h2>
-        <span>2. 車庫・配送ルート地点設定(荷量・到着指定±30分)</span>
+        <span>2. 車庫・配送ルート地点設定(出来上がり時間・車格・備考対応)</span>
         <button class="btn btn-outline btn-sm" onclick="addStop()">+ 地点を追加</button>
       </h2>
 
-      <!-- 出庫設定(車庫 → 最初の出発地) -->
+      <!-- 出庫設定 -->
       <div class="garage-box">
         <div class="garage-header">
           <label style="display: flex; align-items: center; gap:8px; margin:0; color:#d8b4fe; cursor:pointer;">
             <input type="checkbox" id="useDepartureGarage" checked onchange="toggleGarageFields()" style="width: 16px; height: 16px; accent-color:var(--purple);" />
-            <span>【出庫】車庫から最初の出発地までの移動を手入力で反映</span>
+            <span>【出庫】 車庫から最初の出発地までの移動を反映</span>
           </label>
-          <span style="font-size:0.74rem; color:var(--muted);">※住所不要・概算値で加算</span>
+          <select id="depGaragePresetSelect" style="width:auto; padding:3px 7px; font-size:0.76rem;" onchange="applyGaragePresetToField('dep', this.value)"></select>
         </div>
         <div class="garage-fields" id="depGarageFields">
           <div>
@@ -815,14 +926,14 @@ body.preparing-batch-print #batchPrintContainer {
       <!-- 各地点リスト -->
       <div id="stopsContainer"></div>
 
-      <!-- 帰庫設定(最終到着地 → 車庫) -->
+      <!-- 帰庫設定 -->
       <div class="garage-box return">
         <div class="garage-header">
           <label style="display: flex; align-items: center; gap:8px; margin:0; color:#d8b4fe; cursor:pointer;">
             <input type="checkbox" id="useReturnGarage" checked onchange="toggleGarageFields()" style="width: 16px; height: 16px; accent-color:var(--purple);" />
-            <span>【帰庫】最終到着地から車庫までの移動を手入力で反映</span>
+            <span>【帰庫】 最終到着地から車庫までの移動を反映</span>
           </label>
-          <span style="font-size:0.74rem; color:var(--muted);">※出庫と別値で設定可能</span>
+          <select id="retGaragePresetSelect" style="width:auto; padding:3px 7px; font-size:0.76rem;" onchange="applyGaragePresetToField('ret', this.value)"></select>
         </div>
         <div class="garage-fields" id="retGarageFields">
           <div>
@@ -842,55 +953,50 @@ body.preparing-batch-print #batchPrintContainer {
 
       <div style="margin-top:16px;">
         <button class="btn btn-accent" id="calcBtn" style="width: 100%; padding: 13px; font-size:1rem;" onclick="runSimulation()">
-          最適ルート・積載・休憩・稼働時間をシミュレーション計算する
+          最適ルート・積載・出来上がり待機・休憩・稼働時間をシミュレーション計算する
         </button>
       </div>
     </div>
   </div>
 
-  <!-- 右カラム: シミュレーション結果 (印刷時はA4横1枚に最適化) -->
+  <!-- 右カラム: 結果 -->
   <div id="rightResultColumn">
     <div class="card">
       <h2>
         <span>3. シミュレーション結果</span>
         <div class="flex-row no-print">
           <button class="btn btn-outline btn-sm" id="exportBtn" onclick="exportResultCSV()" style="display: none;">結果CSV出力</button>
-          <button class="btn btn-primary btn-sm" id="printBtn" onclick="printA4Report()" style="display: none;">A4横1枚で印刷 / PDF保存</button>
+          <button class="btn btn-primary btn-sm" id="printBtn" onclick="printA4Report()" style="display: none;">A4横1枚で印刷 / PDF 保存</button>
         </div>
       </h2>
 
-      <!-- 印刷時のみ表示される帳票ヘッダー -->
       <div class="print-only-header">
         <div>
           <h1 id="printCourseTitle">配送運行指示書・ルートシミュレーション</h1>
-          <div style="font-size:8pt; color: #475569;">作成ツール: 配送ルート・稼働時間シミュレーター Ver3.2</div>
+          <div style="font-size:8pt; color: #475569;">作成ツール: 配送ルート・稼働時間シミュレーター Ver3.3</div>
         </div>
         <div class="print-meta" id="printMetaInfo">
           運行日: ----/--/-- | 車格: 4t車(上限22)
         </div>
       </div>
 
-      <!-- 印刷時に「左: コース詳細・時刻表 / 右: 全体地図」になるラッパー -->
       <div class="print-layout-wrapper">
-        <!-- 地図エリア -->
         <div class="print-right-map">
           <div id="map"></div>
         </div>
-
-        <!-- コース詳細・サマリー・タイムライン -->
         <div class="print-left-details">
           <div class="kpi-grid">
             <div class="kpi-box">
-              <div class="kpi-label">総拘束時間(12h上限判定)</div>
+              <div class="kpi-label" id="kpiWorkLabel">総拘束時間(上限判定)</div>
               <div class="kpi-val accent" id="kpiTotalWork">--時間--分</div>
             </div>
             <div class="kpi-box">
-              <div class="kpi-label">積載判定(運行別最大荷量)</div>
+              <div class="kpi-label" id="kpiLoadLabel">積載判定(運行別最大)</div>
               <div class="kpi-val accent" id="kpiLoadStatus">-- / 22</div>
             </div>
             <div class="kpi-box">
               <div class="kpi-label">出庫/出発 → 帰庫/完了</div>
-              <div class="kpi-val" id="kpiEndTime">--:-- → --:--</div>
+              <div class="kpi-val" id="kpiEndTime">---</div>
             </div>
             <div class="kpi-box">
               <div class="kpi-label">総走行 / 休憩 / 高速代</div>
@@ -898,8 +1004,8 @@ body.preparing-batch-print #batchPrintContainer {
             </div>
           </div>
 
-          <div id="highwaySummaryBox" style="background: var(--bg); border:1px solid var(--border); border-radius: 8px; padding: 8px 12px; margin-bottom:12px; font-size:0.82rem;">
-            <strong style="color:var(--primary);">運行・積載・高速・休憩サマリー:</strong>
+          <div id="highwaySummaryBox" style="background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; font-size:0.8rem;">
+            <strong style="color:var(--primary);">運行・積載・高速・休憩・備考サマリー:</strong>
             <div id="highwaySummaryText" style="margin-top:3px; color:var(--muted);">「シミュレーション計算する」を押すと詳細が表示されます。</div>
           </div>
 
@@ -907,8 +1013,8 @@ body.preparing-batch-print #batchPrintContainer {
             <table>
               <thead>
                 <tr>
-                  <th style="width: 22%;">時刻 / 指定枠</th>
-                  <th style="width: 31%;">地点名 / 住所</th>
+                  <th style="width: 23%;">時刻 / 指定枠・出来上がり</th>
+                  <th style="width: 30%;">地点名 / 住所 / 備考</th>
                   <th style="width: 15%;">荷量 / 滞在</th>
                   <th style="width: 32%;">次区間ルート / 備考</th>
                 </tr>
@@ -924,48 +1030,68 @@ body.preparing-batch-print #batchPrintContainer {
   </div>
 </div>
 
-<!-- 複数コース一括印刷（PDF出力）用の専用コンテナ -->
+<!-- 一括印刷コンテナ -->
 <div id="batchPrintContainer"></div>
 
 <script>
-// ==========================================
-// 初期データ・定数
-// ==========================================
 const DAILY_API_LIMIT = 100;
-const STORAGE_KEY_API = "wing_gmaps_key";
-const STORAGE_KEY_COURSES = "wing_saved_courses_v3";
-const STORAGE_KEY_QUOTA = "wing_api_quota_v1";
+const STORAGE_KEY_API = "wing_gmaps_key_v33";
+const STORAGE_KEY_COURSES = "wing_saved_courses_v33";
+const STORAGE_KEY_QUOTA = "wing_api_quota_v33";
+const STORAGE_KEY_MASTER = "wing_master_settings_v33";
 
 const VEHICLE_SPECS = {
-  "2t":  { label: "2t車",     defaultCap: 8,  tollMult: 1.0  },
+  "2t":  { label: "2t車",     defaultCap: 8,  tollMult: 1.0 },
   "3t":  { label: "3t車",     defaultCap: 12, tollMult: 1.15 },
-  "4t":  { label: "4t車",     defaultCap: 22, tollMult: 1.2  },
+  "4t":  { label: "4t車",     defaultCap: 22, tollMult: 1.2 },
   "10t": { label: "10t 大型", defaultCap: 36, tollMult: 1.65 }
 };
 
+const DEFAULT_MASTER = {
+  maxWorkHours: 12,
+  maxDistKm: 200,
+  maxTrips: 3,
+  activeMaterialId: "cart",
+  materials: [
+    { id: "piece", name: "個数", limit: 120 },
+    { id: "cart",  name: "カート", limit: 22 },
+    { id: "cage",  name: "カゴ車", limit: 14 }
+  ],
+  garages: [
+    { id: "g_yashio", name: "八潮車庫", address: "埼玉県八潮市大瀬", moveMin: 20, moveKm: 6.5 },
+    { id: "g_soka",   name: "草加車庫", address: "埼玉県草加市八幡町", moveMin: 25, moveKm: 8.0 },
+    { id: "g_misato", name: "三郷車庫", address: "埼玉県三郷市中央", moveMin: 30, moveKm: 10.5 }
+  ],
+  selectedAutoGarageId: "g_yashio"
+};
+
+let masterSettings = loadMasterSettings();
+
 let stops = [
-  { name: "八潮常温センター", address: "埼玉県八潮市大瀬", loadQty: 0, stayMin: 15, targetTime: "", useHighway: false },
-  { name: "草加八幡店", address: "埼玉県草加市八幡町", loadQty: 12, stayMin: 25, targetTime: "08:30", useHighway: false },
-  { name: "八潮常温センター(折返)", address: "埼玉県八潮市大瀬", loadQty: 0, stayMin: 20, targetTime: "", useHighway: true },
-  { name: "赤羽台店", address: "東京都北区赤羽台", loadQty: 18, stayMin: 30, targetTime: "11:00", useHighway: true }
+  { name: "八潮常温センター", address: "埼玉県八潮市大瀬", loadQty: 0, stayMin: 15, targetTime: "", readyTime: "", courseCode: "1コース", vehicleClass: "4t", note: "", useHighway: false },
+  { name: "草加八幡店", address: "埼玉県草加市八幡町", loadQty: 12, stayMin: 25, targetTime: "08:30", readyTime: "", courseCode: "1コース", vehicleClass: "4t", note: "高さ制限3.8m注意", useHighway: false },
+  { name: "八潮常温センター(折返)", address: "埼玉県八潮市大瀬", loadQty: 0, stayMin: 20, targetTime: "", readyTime: "10:15", courseCode: "1コース", vehicleClass: "4t", note: "2便積込(10:15以降開始)", useHighway: true },
+  { name: "赤羽台店", address: "東京都北区赤羽台", loadQty: 10, stayMin: 30, targetTime: "11:30", readyTime: "", courseCode: "1コース", vehicleClass: "4t", note: "4t車まで進入可", useHighway: true }
 ];
 
 let autoGeneratedCourses = [];
+// コースごとのAPI計算済みルートキャッシュ (courseIdx -> { resolvedPoints, segments, simResult, isApiCalculated })
+let apiCalculatedCourseCache = {};
 
 const geoDict = [
-  { key: "八潮",     lat: 35.8225, lng: 139.8392, ic: "八潮IC" },
-  { key: "草加",     lat: 35.8255, lng: 139.8055, ic: "草加IC" },
+  { key: "八潮",     lat: 35.8225, lng: 139.8392, ic: "八潮 IC" },
+  { key: "草加",     lat: 35.8255, lng: 139.8055, ic: "草加 IC" },
   { key: "三郷",     lat: 35.8302, lng: 139.8722, ic: "三郷IC" },
-  { key: "越谷",     lat: 35.8911, lng: 139.7909, ic: "浦和IC" },
+  { key: "越谷",     lat: 35.8911, lng: 139.7909, ic: "浦和 IC" },
   { key: "川口",     lat: 35.8078, lng: 139.7241, ic: "川口中央IC" },
   { key: "さいたま", lat: 35.8617, lng: 139.6455, ic: "与野IC" },
   { key: "赤羽",     lat: 35.7781, lng: 139.7209, ic: "板橋本町IC" },
   { key: "北区",     lat: 35.7528, lng: 139.7335, ic: "王子北IC" },
-  { key: "足立",     lat: 35.7750, lng: 139.8044, ic: "加平IC" },
-  { key: "江東",     lat: 35.6728, lng: 139.8174, ic: "木場IC" },
+  { key: "足立",     lat: 35.7750, lng: 139.8044, ic: "加平 IC" },
+  { key: "江東",     lat: 35.6728, lng: 139.8174, ic: "木場 IC" },
   { key: "大田",     lat: 35.5613, lng: 139.7160, ic: "鈴ヶ森IC" },
   { key: "渋谷",     lat: 35.6580, lng: 139.7016, ic: "渋谷IC" },
-  { key: "新宿",     lat: 35.6895, lng: 139.6917, ic: "新宿IC" },
+  { key: "新宿",     lat: 35.6895, lng: 139.6917, ic: "新宿 IC" },
   { key: "横浜",     lat: 35.4437, lng: 139.6380, ic: "港北IC" },
   { key: "川崎",     lat: 35.5308, lng: 139.7029, ic: "川崎IC" },
   { key: "千葉",     lat: 35.6074, lng: 140.1065, ic: "穴川IC" },
@@ -976,6 +1102,7 @@ const geoDict = [
 ];
 
 const geocodeCache = {};
+const routeApiCache = {};
 let map, routeLayerGroup;
 let lastSimulationRows = [];
 let lastBounds = null;
@@ -985,9 +1112,7 @@ let batchMapInstances = [];
 // 初期化処理
 // ==========================================
 window.onload = () => {
-  const today = getTodayString();
-  document.getElementById("runDate").value = today;
-
+  document.getElementById("runDate").value = getTodayString();
   const savedKey = localStorage.getItem(STORAGE_KEY_API);
   if (savedKey) {
     document.getElementById("gmapsApiKey").value = savedKey;
@@ -995,13 +1120,13 @@ window.onload = () => {
   } else {
     updateApiModeUI(false);
   }
-
   refreshQuotaBadge();
   refreshCourseDropdown();
+  renderMasterUI();
   toggleGarageFields();
   initMap();
   renderStops();
-  runSimulation();
+  runSimulation(true);
 };
 
 function getTodayString() {
@@ -1020,14 +1145,260 @@ function initMap() {
   routeLayerGroup = L.layerGroup().addTo(map);
 }
 
+// ==========================================
+// ③ 設定マスター管理
+// ==========================================
+function loadMasterSettings() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_MASTER);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return {
+        ...DEFAULT_MASTER,
+        ...parsed,
+        materials: Array.isArray(parsed.materials) && parsed.materials.length > 0 ? parsed.materials : DEFAULT_MASTER.materials,
+        garages: Array.isArray(parsed.garages) && parsed.garages.length > 0 ? parsed.garages : DEFAULT_MASTER.garages
+      };
+    }
+  } catch (e) {}
+  return JSON.parse(JSON.stringify(DEFAULT_MASTER));
+}
+
+function saveMasterSettings() {
+  localStorage.setItem(STORAGE_KEY_MASTER, JSON.stringify(masterSettings));
+}
+
+function resetMasterSettings() {
+  if (!confirm("設定マスター（稼働時間限界・距離上限・運行数上限・マテハン・出着車庫）を標準値に戻しますか？")) return;
+  masterSettings = JSON.parse(JSON.stringify(DEFAULT_MASTER));
+  saveMasterSettings();
+  renderMasterUI();
+  onActiveMaterialChange();
+  runSimulation(true);
+}
+
+function renderMasterUI() {
+  document.getElementById("masterMaxWorkHours").value = masterSettings.maxWorkHours;
+  document.getElementById("masterMaxDistKm").value = masterSettings.maxDistKm;
+  document.getElementById("masterMaxTrips").value = masterSettings.maxTrips;
+
+  // マテハンセレクト & チップ描画
+  const matSelect = document.getElementById("activeMaterialSelect");
+  matSelect.innerHTML = "";
+  masterSettings.materials.forEach(m => {
+    const opt = document.createElement("option");
+    opt.value = m.id;
+    opt.textContent = `${m.name} (上限: ${m.limit})`;
+    if (m.id === masterSettings.activeMaterialId) opt.selected = true;
+    matSelect.appendChild(opt);
+  });
+
+  const chipsEl = document.getElementById("materialChipsList");
+  chipsEl.innerHTML = "";
+  masterSettings.materials.forEach(m => {
+    const chip = document.createElement("div");
+    chip.className = "preset-chip";
+    const isActive = m.id === masterSettings.activeMaterialId;
+    chip.innerHTML = `
+      <span style="color:${isActive ? "#6ee7b7" : "#e2e8f0"}; font-weight:${isActive ? "bold" : "normal"};">
+        ${escapeHtml(m.name)}: <strong>${m.limit}</strong>
+      </span>
+      <button class="btn btn-outline btn-sm" style="padding:1px 6px; font-size:0.7rem;" onclick="editMaterialToForm('${m.id}')">編集</button>
+      ${masterSettings.materials.length > 1 ? `<button class="btn btn-danger" style="padding:1px 6px; font-size:0.7rem;" onclick="deleteMaterial('${m.id}')">×</button>` : ""}
+    `;
+    chipsEl.appendChild(chip);
+  });
+
+  renderGaragePresetsUI();
+  updateKpiLabelsFromMaster();
+}
+
+function onMasterParamChange() {
+  masterSettings.maxWorkHours = Math.max(0.5, parseFloat(document.getElementById("masterMaxWorkHours").value || "12"));
+  masterSettings.maxDistKm = Math.max(1, parseFloat(document.getElementById("masterMaxDistKm").value || "200"));
+  masterSettings.maxTrips = Math.max(1, parseInt(document.getElementById("masterMaxTrips").value || "3", 10));
+  saveMasterSettings();
+  updateKpiLabelsFromMaster();
+}
+
+function updateKpiLabelsFromMaster() {
+  document.getElementById("kpiWorkLabel").textContent = `総拘束時間(${masterSettings.maxWorkHours}h上限)`;
+  const activeMat = getActiveMaterial();
+  document.getElementById("kpiLoadLabel").textContent = `積載判定(${activeMat.name}上限)`;
+}
+
+function getActiveMaterial() {
+  return masterSettings.materials.find(m => m.id === masterSettings.activeMaterialId) || masterSettings.materials[0];
+}
+
+function onActiveMaterialChange() {
+  const selId = document.getElementById("activeMaterialSelect").value;
+  masterSettings.activeMaterialId = selId;
+  const mat = getActiveMaterial();
+  if (mat) {
+    document.getElementById("maxCapacityInput").value = mat.limit;
+  }
+  saveMasterSettings();
+  updateKpiLabelsFromMaster();
+}
+
+function editMaterialToForm(id) {
+  const mat = masterSettings.materials.find(m => m.id === id);
+  if (!mat) return;
+  document.getElementById("newMatName").value = mat.name;
+  document.getElementById("newMatLimit").value = mat.limit;
+}
+
+function addOrUpdateMaterial() {
+  const name = document.getElementById("newMatName").value.trim();
+  const limit = Math.max(1, parseFloat(document.getElementById("newMatLimit").value || "1"));
+  if (!name) return alert("マテハン名称（例: 個数、カート、カゴ車）を入力してください。");
+
+  const existing = masterSettings.materials.find(m => m.name === name);
+  if (existing) {
+    existing.limit = limit;
+    masterSettings.activeMaterialId = existing.id;
+  } else {
+    const newId = "mat_" + Date.now();
+    masterSettings.materials.push({ id: newId, name, limit });
+    masterSettings.activeMaterialId = newId;
+  }
+  document.getElementById("maxCapacityInput").value = limit;
+  document.getElementById("newMatName").value = "";
+  saveMasterSettings();
+  renderMasterUI();
+}
+
+function deleteMaterial(id) {
+  if (masterSettings.materials.length <= 1) return alert("最低1つのマテハン設定が必要です。");
+  masterSettings.materials = masterSettings.materials.filter(m => m.id !== id);
+  if (masterSettings.activeMaterialId === id) {
+    masterSettings.activeMaterialId = masterSettings.materials[0].id;
+    document.getElementById("maxCapacityInput").value = masterSettings.materials[0].limit;
+  }
+  saveMasterSettings();
+  renderMasterUI();
+}
+
+// ==========================================
+// ① 出着車庫地 複数登録管理
+// ==========================================
+function renderGaragePresetsUI() {
+  const autoSel = document.getElementById("autoHubGarageSelect");
+  const depSel = document.getElementById("depGaragePresetSelect");
+  const retSel = document.getElementById("retGaragePresetSelect");
+  const chips = document.getElementById("garagePresetChips");
+
+  const buildOptions = (selectedId) => {
+    let opts = `<option value="">-- 出着車庫を選択 --</option>`;
+    masterSettings.garages.forEach(g => {
+      opts += `<option value="${escapeHtml(g.id)}" ${g.id === selectedId ? "selected" : ""}>${escapeHtml(g.name)} (${g.moveMin}分 / ${g.moveKm}km)</option>`;
+    });
+    return opts;
+  };
+
+  autoSel.innerHTML = buildOptions(masterSettings.selectedAutoGarageId);
+  depSel.innerHTML = buildOptions("");
+  retSel.innerHTML = buildOptions("");
+
+  chips.innerHTML = "";
+  masterSettings.garages.forEach(g => {
+    const el = document.createElement("div");
+    el.className = "preset-chip";
+    el.innerHTML = `
+      <span><strong>${escapeHtml(g.name)}</strong> (${escapeHtml(g.address)} / ${g.moveMin}分・${g.moveKm}km)</span>
+      ${masterSettings.garages.length > 1 ? `<button class="btn btn-danger" style="padding:1px 6px; font-size:0.7rem;" onclick="deleteGaragePreset('${g.id}')">×</button>` : ""}
+    `;
+    chips.appendChild(el);
+  });
+}
+
+function addGaragePreset() {
+  const name = document.getElementById("newGarageName").value.trim();
+  const address = document.getElementById("newGarageAddress").value.trim();
+  const moveMin = Math.max(0, parseInt(document.getElementById("newGarageMin").value || "0", 10));
+  const moveKm = Math.max(0, parseFloat(document.getElementById("newGarageKm").value || "0"));
+  if (!name) return alert("車庫名称を入力してください。");
+
+  const id = "g_" + Date.now();
+  masterSettings.garages.push({
+    id,
+    name,
+    address: address || name,
+    moveMin,
+    moveKm
+  });
+  masterSettings.selectedAutoGarageId = id;
+  document.getElementById("newGarageName").value = "";
+  document.getElementById("newGarageAddress").value = "";
+  saveMasterSettings();
+  renderGaragePresetsUI();
+  onAutoHubGarageChange();
+}
+
+function deleteGaragePreset(id) {
+  if (masterSettings.garages.length <= 1) return alert("最低1つの出着車庫が必要です。");
+  masterSettings.garages = masterSettings.garages.filter(g => g.id !== id);
+  if (masterSettings.selectedAutoGarageId === id) {
+    masterSettings.selectedAutoGarageId = masterSettings.garages[0].id;
+  }
+  saveMasterSettings();
+  renderGaragePresetsUI();
+}
+
+function onAutoHubGarageChange() {
+  const id = document.getElementById("autoHubGarageSelect").value;
+  masterSettings.selectedAutoGarageId = id;
+  saveMasterSettings();
+  const g = masterSettings.garages.find(x => x.id === id);
+  if (g) {
+    document.getElementById("useDepartureGarage").checked = true;
+    document.getElementById("useReturnGarage").checked = true;
+    document.getElementById("depGarageName").value = `${g.name}(出庫)`;
+    document.getElementById("depGarageMin").value = g.moveMin;
+    document.getElementById("depGarageKm").value = g.moveKm;
+    document.getElementById("retGarageName").value = `${g.name}(帰庫)`;
+    document.getElementById("retGarageMin").value = g.moveMin;
+    document.getElementById("retGarageKm").value = g.moveKm;
+    toggleGarageFields();
+  }
+}
+
+function applyGaragePresetToField(dir, presetId) {
+  if (!presetId) return;
+  const g = masterSettings.garages.find(x => x.id === presetId);
+  if (!g) return;
+  if (dir === "dep") {
+    document.getElementById("useDepartureGarage").checked = true;
+    document.getElementById("depGarageName").value = `${g.name}(出庫)`;
+    document.getElementById("depGarageMin").value = g.moveMin;
+    document.getElementById("depGarageKm").value = g.moveKm;
+  } else {
+    document.getElementById("useReturnGarage").checked = true;
+    document.getElementById("retGarageName").value = `${g.name}(帰庫)`;
+    document.getElementById("retGarageMin").value = g.moveMin;
+    document.getElementById("retGarageKm").value = g.moveKm;
+  }
+  toggleGarageFields();
+}
+
+// ==========================================
+// 車格・API使用量管理
+// ==========================================
 function onVehicleClassChange() {
   const vClass = document.getElementById("vehicleClass").value;
   const spec = VEHICLE_SPECS[vClass] || VEHICLE_SPECS["4t"];
-  document.getElementById("maxCapacityInput").value = spec.defaultCap;
+  const activeMat = getActiveMaterial();
+  // マテハンが「カート」の場合は車格標準またはマテハン上限を反映
+  document.getElementById("maxCapacityInput").value = (activeMat && activeMat.id === "cart")
+    ? spec.defaultCap
+    : (activeMat ? activeMat.limit : spec.defaultCap);
 }
 
-function getVehicleSettings() {
-  const vClass = document.getElementById("vehicleClass").value;
+function getVehicleSettings(overrideClass = null) {
+  const vClass = overrideClass && VEHICLE_SPECS[overrideClass]
+    ? overrideClass
+    : document.getElementById("vehicleClass").value;
   const spec = VEHICLE_SPECS[vClass] || VEHICLE_SPECS["4t"];
   const maxCap = Math.max(1, parseFloat(document.getElementById("maxCapacityInput").value || spec.defaultCap));
   return {
@@ -1038,9 +1409,6 @@ function getVehicleSettings() {
   };
 }
 
-// ==========================================
-// API 使用上限管理 (100回まで)
-// ==========================================
 function getQuotaData() {
   const today = getTodayString();
   try {
@@ -1107,12 +1475,12 @@ function updateApiModeUI(hasKey) {
     badge.textContent = "Google Routes & Geocoding API 連携中";
     badge.style.background = "#10b981";
     badge.style.color = "#022c22";
-    desc.textContent = "Google Maps APIキー設定済(単一計算時に実道路・実測距離を使用 / 自動編成時はAPI消費0)";
+    desc.textContent = "Google Maps APIキー設定済（単独計算・一括API計算で実道路ルート・動線を取得可能）";
   } else {
     badge.textContent = "デモシミュレーター稼働中(API不要)";
     badge.style.background = "#f59e0b";
     badge.style.color = "#000";
-    desc.textContent = "現在はデモ計算エンジン (主要拠点データ+距離推定) で動作しています。";
+    desc.textContent = "現在はデモ計算エンジン(主要拠点データ+距離推定)で動作しています。";
   }
 }
 
@@ -1122,7 +1490,6 @@ function updateApiModeUI(hasKey) {
 function toggleGarageFields() {
   const useDep = document.getElementById("useDepartureGarage").checked;
   const useRet = document.getElementById("useReturnGarage").checked;
-
   document.getElementById("depGarageFields").style.opacity = useDep ? "1" : "0.45";
   document.getElementById("depGarageName").disabled = !useDep;
   document.getElementById("depGarageMin").disabled = !useDep;
@@ -1162,7 +1529,7 @@ function applyGarageConfig(cfg) {
 }
 
 // ==========================================
-// コース保存・読込・セーブデータ書き出し/読込
+// コース保存・読込・一括保存・JSON入出力
 // ==========================================
 function getAllSavedCourses() {
   try {
@@ -1176,14 +1543,34 @@ function getAllSavedCourses() {
 function refreshCourseDropdown(selectedKey = "") {
   const courses = getAllSavedCourses();
   const select = document.getElementById("savedCourseSelect");
-  select.innerHTML = `<option value="">-- 保存済みコースを選択(${Object.keys(courses).length}件) --</option>`;
+  select.innerHTML = `<option value="">-- 保存済みコースを選択 (${Object.keys(courses).length}件) --</option>`;
   Object.keys(courses).forEach(courseName => {
     const opt = document.createElement("option");
     opt.value = courseName;
-    opt.textContent = `${courseName} (${courses[courseName].stops.length}地点)`;
+    const apiBadge = courses[courseName].isApiCalculated ? " [API動線済]" : "";
+    opt.textContent = `${courseName} (${courses[courseName].stops.length}地点)${apiBadge}`;
     if (courseName === selectedKey) opt.selected = true;
     select.appendChild(opt);
   });
+}
+
+function buildCoursePayload(courseName, customStops, customVehicleClass = null, customSimResult = null) {
+  const vSettings = getVehicleSettings(customVehicleClass);
+  return {
+    courseName,
+    startTime: document.getElementById("startTime").value || "07:00",
+    vehicleClass: vSettings.vClass,
+    maxCapacity: vSettings.maxCap,
+    highwayMode: document.getElementById("highwayMode").value,
+    stayMode: document.getElementById("stayMode").value,
+    uniformStayMin: document.getElementById("uniformStayMin").value,
+    breakRuleMode: document.getElementById("breakRuleMode").value,
+    garage: getGarageConfig(),
+    stops: JSON.parse(JSON.stringify(customStops)),
+    isApiCalculated: Boolean(customSimResult && customSimResult.usedGoogleApi),
+    cachedSimResult: customSimResult ? JSON.parse(JSON.stringify(customSimResult)) : null,
+    updatedAt: new Date().toLocaleString("ja-JP")
+  };
 }
 
 function saveCurrentCourse() {
@@ -1192,22 +1579,33 @@ function saveCurrentCourse() {
   if (stops.length < 2) return alert("出発地点と到着地点の最低2地点を設定してください。");
 
   const courses = getAllSavedCourses();
-  courses[courseName] = {
-    courseName: courseName,
-    startTime: document.getElementById("startTime").value || "07:00",
-    vehicleClass: document.getElementById("vehicleClass").value,
-    maxCapacity: document.getElementById("maxCapacityInput").value,
-    highwayMode: document.getElementById("highwayMode").value,
-    stayMode: document.getElementById("stayMode").value,
-    uniformStayMin: document.getElementById("uniformStayMin").value,
-    breakRuleMode: document.getElementById("breakRuleMode").value,
-    garage: getGarageConfig(),
-    stops: JSON.parse(JSON.stringify(stops)),
-    updatedAt: new Date().toLocaleString("ja-JP")
-  };
+  courses[courseName] = buildCoursePayload(courseName, stops);
   localStorage.setItem(STORAGE_KEY_COURSES, JSON.stringify(courses));
   refreshCourseDropdown(courseName);
   alert(`コース「${courseName}」を保存しました。`);
+}
+
+// ② 自動コース一括保存
+function saveAllGeneratedCourses() {
+  if (!autoGeneratedCourses || autoGeneratedCourses.length === 0) {
+    return alert("保存する自動編成コースがありません。");
+  }
+  const courses = getAllSavedCourses();
+  let savedCount = 0;
+  let lastSavedTitle = "";
+
+  autoGeneratedCourses.forEach((course, idx) => {
+    const title = course.courseTitle || `自動編成_コース${idx + 1}`;
+    const apiData = apiCalculatedCourseCache[idx];
+    const simRes = apiData ? apiData.simResult : null;
+    courses[title] = buildCoursePayload(title, course.stops, course.vehicleClass || null, simRes);
+    savedCount++;
+    lastSavedTitle = title;
+  });
+
+  localStorage.setItem(STORAGE_KEY_COURSES, JSON.stringify(courses));
+  refreshCourseDropdown(lastSavedTitle);
+  alert(`自動編成された全 ${savedCount} コースを一括保存しました。`);
 }
 
 function loadSelectedCourse() {
@@ -1234,14 +1632,17 @@ function loadSelectedCourse() {
 
   stops = JSON.parse(JSON.stringify(data.stops));
   renderStops();
-  runSimulation();
+  if (data.cachedSimResult) {
+    renderSimulationResult(data.cachedSimResult, getGarageConfig(), getVehicleSettings(data.vehicleClass));
+  } else {
+    runSimulation(true);
+  }
 }
 
 function deleteSelectedCourse() {
   const courseName = document.getElementById("savedCourseSelect").value;
   if (!courseName) return alert("削除するコースをプルダウンから選択してください。");
   if (!confirm(`保存済みコース「${courseName}」を削除しますか？`)) return;
-
   const courses = getAllSavedCourses();
   delete courses[courseName];
   localStorage.setItem(STORAGE_KEY_COURSES, JSON.stringify(courses));
@@ -1255,10 +1656,11 @@ function exportCoursesJSON() {
     return alert("書き出す保存済みコースがありません。先にコースを保存してください。");
   }
   const exportPayload = {
-    app: "DeliveryRouteSimulator",
-    version: "3.2",
+    app: "Delivery Route Simulator",
+    version: "3.3",
     exportedAt: new Date().toISOString(),
-    courses: courses
+    master: masterSettings,
+    courses
   };
   const blob = new Blob([JSON.stringify(exportPayload, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
@@ -1280,6 +1682,11 @@ function importCoursesJSON(event) {
       if (typeof importedCourses !== "object" || Array.isArray(importedCourses)) {
         throw new Error("セーブデータの形式が正しくありません。");
       }
+      if (parsed.master && typeof parsed.master === "object") {
+        masterSettings = { ...masterSettings, ...parsed.master };
+        saveMasterSettings();
+        renderMasterUI();
+      }
       const currentCourses = getAllSavedCourses();
       let importCount = 0;
       Object.keys(importedCourses).forEach(key => {
@@ -1292,6 +1699,7 @@ function importCoursesJSON(event) {
       localStorage.setItem(STORAGE_KEY_COURSES, JSON.stringify(currentCourses));
       const firstKey = Object.keys(importedCourses)[0];
       refreshCourseDropdown(firstKey);
+      document.getElementById("savedCourseSelect").value = firstKey;
       loadSelectedCourse();
       alert(`${importCount}件のコースデータを読み込みました。`);
     } catch (err) {
@@ -1303,7 +1711,7 @@ function importCoursesJSON(event) {
 }
 
 // ==========================================
-// 地点リスト UI 操作(荷量・到着時間枠対応)
+// 地点リスト UI 操作
 // ==========================================
 function toggleStayMode() {
   const mode = document.getElementById("stayMode").value;
@@ -1316,12 +1724,12 @@ function renderStops() {
   const highwayMode = document.getElementById("highwayMode").value;
   const stayMode = document.getElementById("stayMode").value;
   const uniformMin = parseInt(document.getElementById("uniformStayMin").value || "0", 10);
-
   container.innerHTML = "";
+
   stops.forEach((stop, idx) => {
     const isFirst = idx === 0;
     const isLast = idx === stops.length - 1;
-    let roleLabel = `経由 納品先${idx}`;
+    let roleLabel = `経由納品先${idx}`;
     let badgeClass = "";
     if (isFirst) { roleLabel = "出発地点(起点)"; badgeClass = "start"; }
     else if (isLast) { roleLabel = "最終到着地点"; badgeClass = "end"; }
@@ -1336,7 +1744,7 @@ function renderStops() {
       <div class="stop-header">
         <span class="stop-badge ${badgeClass}">${roleLabel}</span>
         <div class="flex-row">
-          ${idx > 0 ? `<button class="btn btn-outline btn-sm" onclick="moveStop(${idx}, -1)" title="上へ">↑</button>` : ""}
+          ${idx > 0 ? `<button onclick="moveStop(${idx}, -1)" class="btn btn-outline btn-sm" title="上へ">↑</button>` : ""}
           ${idx < stops.length - 1 ? `<button class="btn btn-outline btn-sm" onclick="moveStop(${idx}, 1)" title="下へ">↓</button>` : ""}
           ${stops.length > 2 ? `<button class="btn btn-danger" onclick="removeStop(${idx})">削除</button>` : ""}
         </div>
@@ -1352,15 +1760,39 @@ function renderStops() {
         </div>
         <div>
           <label>荷量</label>
-          <input type="number" value="${loadVal}" min="0" step="1" onchange="stops[${idx}].loadQty = parseFloat(this.value || 0)" title="納品荷量(拠点・折返は0)" />
+          <input type="number" value="${loadVal}" min="0" step="1" onchange="stops[${idx}].loadQty = parseFloat(this.value || 0)" />
         </div>
         <div>
           <label>指定着(±30分)</label>
-          <input type="time" value="${escapeHtml(stop.targetTime || "")}" onchange="stops[${idx}].targetTime = this.value" title="未入力ならそのまま計算。入力時は±30分枠を適用" />
+          <input type="time" value="${escapeHtml(stop.targetTime || "")}" onchange="stops[${idx}].targetTime = this.value" />
         </div>
         <div>
           <label>滞在(分)</label>
           <input type="number" value="${stayDisplayVal}" min="0" step="5" ${stayDisabled} onchange="stops[${idx}].stayMin = parseInt(this.value || 0, 10)" />
+        </div>
+      </div>
+      <div class="stop-fields-sub">
+        <div>
+          <label>コース</label>
+          <input type="text" value="${escapeHtml(stop.courseCode || "")}" onchange="stops[${idx}].courseCode = this.value" placeholder="例: 1コース" />
+        </div>
+        <div>
+          <label>車格指定</label>
+          <select onchange="stops[${idx}].vehicleClass = this.value">
+            <option value="" ${!stop.vehicleClass ? "selected" : ""}>全体設定に従う</option>
+            <option value="2t" ${stop.vehicleClass === "2t" ? "selected" : ""}>2t車</option>
+            <option value="3t" ${stop.vehicleClass === "3t" ? "selected" : ""}>3t車</option>
+            <option value="4t" ${stop.vehicleClass === "4t" ? "selected" : ""}>4t車</option>
+            <option value="10t" ${stop.vehicleClass === "10t" ? "selected" : ""}>10t 大型</option>
+          </select>
+        </div>
+        <div>
+          <label>荷物出来上がり</label>
+          <input type="time" value="${escapeHtml(stop.readyTime || "")}" onchange="stops[${idx}].readyTime = this.value" title="この時刻までは積込・作業開始を待機" />
+        </div>
+        <div>
+          <label>納品備考(高さ制限・車格制限等)</label>
+          <input type="text" value="${escapeHtml(stop.note || "")}" onchange="stops[${idx}].note = this.value" placeholder="例: 高さ制限3.5m / 2t推奨" />
         </div>
       </div>
     `;
@@ -1369,7 +1801,7 @@ function renderStops() {
     if (!isLast) {
       const connDiv = document.createElement("div");
       connDiv.className = "segment-connector";
-      const isChecked = stop.useHighway;
+      const isChecked = Boolean(stop.useHighway);
       if (highwayMode === "manual") {
         connDiv.innerHTML = `
           <label class="highway-pill ${isChecked ? "active" : ""}">
@@ -1396,6 +1828,10 @@ function addStop() {
     loadQty: 6,
     stayMin: 20,
     targetTime: "",
+    readyTime: "",
+    courseCode: "",
+    vehicleClass: "",
+    note: "",
     useHighway: false
   });
   renderStops();
@@ -1424,11 +1860,9 @@ function toggleSegmentHighway(idx, checked) {
 async function geocodeAddressGoogle(address, apiKey) {
   const cleanAddr = address.trim();
   if (geocodeCache[cleanAddr]) return geocodeCache[cleanAddr];
-
   const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(cleanAddr)}&language=ja&region=jp&key=${encodeURIComponent(apiKey)}`;
   const res = await fetch(url);
   incrementApiUsage(1);
-
   if (!res.ok) throw new Error(`Geocoding API HTTP エラー: ${res.status}`);
   const data = await res.json();
   if (data.status !== "OK" || !data.results || data.results.length === 0) {
@@ -1446,17 +1880,19 @@ async function geocodeAddressGoogle(address, apiKey) {
 }
 
 async function computeRouteGoogle(originPt, destPt, avoidHighways, apiKey) {
+  const cacheKey = `${originPt.lat.toFixed(5)},${originPt.lng.toFixed(5)}->${destPt.lat.toFixed(5)},${destPt.lng.toFixed(5)}|avoidHwy=${avoidHighways}`;
+  if (routeApiCache[cacheKey]) return routeApiCache[cacheKey];
+
   const url = "https://routes.googleapis.com/directions/v2:computeRoutes";
   const body = {
     origin: { location: { latLng: { latitude: originPt.lat, longitude: originPt.lng } } },
     destination: { location: { latLng: { latitude: destPt.lat, longitude: destPt.lng } } },
     travelMode: "DRIVE",
     routingPreference: "TRAFFIC_AWARE",
-    routeModifiers: { avoidHighways: avoidHighways },
+    routeModifiers: { avoidHighways: Boolean(avoidHighways) },
     languageCode: "ja",
     units: "METRIC"
   };
-
   const res = await fetch(url, {
     method: "POST",
     headers: {
@@ -1467,14 +1903,12 @@ async function computeRouteGoogle(originPt, destPt, avoidHighways, apiKey) {
     body: JSON.stringify(body)
   });
   incrementApiUsage(1);
-
   if (!res.ok) {
     const errText = await res.text();
     throw new Error(`Routes API エラー (${res.status}): ${errText}`);
   }
   const data = await res.json();
   if (!data.routes || data.routes.length === 0) throw new Error("ルートが見つかりませんでした。");
-
   const route = data.routes[0];
   const distanceKm = Math.round((route.distanceMeters / 1000) * 10) / 10;
   const durationSec = parseInt(String(route.duration || "0s").replace("s", ""), 10);
@@ -1483,12 +1917,14 @@ async function computeRouteGoogle(originPt, destPt, avoidHighways, apiKey) {
     ? decodePolyline(route.polyline.encodedPolyline)
     : [[originPt.lat, originPt.lng], [destPt.lat, destPt.lng]];
 
-  return {
+  const result = {
     distanceKm,
     durationMin,
     description: route.description || "",
     coords: decodedCoords
   };
+  routeApiCache[cacheKey] = result;
+  return result;
 }
 
 function decodePolyline(encoded) {
@@ -1521,7 +1957,7 @@ function decodePolyline(encoded) {
 }
 
 // ==========================================
-// デモ用計算エンジン
+// デモ計算エンジン & ヘルパー
 // ==========================================
 function resolveLocationDemo(address) {
   for (const item of geoDict) {
@@ -1533,12 +1969,12 @@ function resolveLocationDemo(address) {
   for (let i = 0; i < address.length; i++) {
     hash = address.charCodeAt(i) + ((hash << 5) - hash);
   }
-  const latOffset = ((hash % 40) / 100);
-  const lngOffset = (((hash >> 4) % 40) / 100);
+  const latOffset = (Math.abs(hash) % 40) / 100;
+  const lngOffset = (Math.abs(hash >> 4) % 40) / 100;
   return {
     lat: 35.68 + latOffset,
     lng: 139.75 + lngOffset,
-    ic: `${address.slice(0, 4)}付近 IC`
+    ic: `${(address || "地点").slice(0, 4)}付近 IC`
   };
 }
 
@@ -1563,9 +1999,6 @@ function parseTimeToMinutes(timeStr, baseStartMin = 0) {
   return mins;
 }
 
-// ==========================================
-// 運行別積載量(混載上限)判定ヘルパー
-// ==========================================
 function evaluateTripLoads(targetStops, hubNameHint, maxCap) {
   const hubAddr = targetStops[0] ? targetStops[0].address.trim() : "";
   let currentTripLoad = 0;
@@ -1595,8 +2028,8 @@ function evaluateTripLoads(targetStops, hubNameHint, maxCap) {
 
   if (currentTripLoad > 0 || tripLoads.length === 0) {
     tripLoads.push(currentTripLoad);
+    if (currentTripLoad > maxTripLoad) maxTripLoad = currentTripLoad;
   }
-  if (currentTripLoad > maxTripLoad) maxTripLoad = currentTripLoad;
 
   return {
     tripLoads,
@@ -1607,7 +2040,7 @@ function evaluateTripLoads(targetStops, hubNameHint, maxCap) {
 }
 
 // ==========================================
-// コアシミュレーション計算エンジン
+// コアシミュレーション計算エンジン (荷物出来上がり時間・備考対応)
 // ==========================================
 async function calculateCourseSchedule(targetStops, options) {
   const {
@@ -1626,7 +2059,6 @@ async function calculateCourseSchedule(targetStops, options) {
   const hubNameHint = document.getElementById("hubNameInput").value.trim();
   const loadSummary = evaluateTripLoads(targetStops, hubNameHint, maxCap || 22);
 
-  // 1. 各地点の座標 & 区間走行時間を事前解決
   const resolvedPoints = [];
   for (let i = 0; i < targetStops.length; i++) {
     const s = targetStops[i];
@@ -1672,7 +2104,7 @@ async function calculateCourseSchedule(targetStops, options) {
   }
 
   const [startH, startM] = startTimeStr.split(":").map(Number);
-  const initialStartMin = startH * 60 + startM;
+  const initialStartMin = (isNaN(startH) ? 7 : startH) * 60 + (isNaN(startM) ? 0 : startM);
 
   function simulateTimeline(breakPlanMap) {
     let curMin = initialStartMin;
@@ -1680,30 +2112,33 @@ async function calculateCourseSchedule(targetStops, options) {
     let totalDriveMin = 0;
     let totalStayMin = 0;
     let totalWaitMin = 0;
+    let totalReadyWaitMin = 0;
     let totalBreakMin = 0;
     let totalDistKm = 0;
     let totalTollYen = 0;
     let lateCount = 0;
     const highwayExplanations = [];
+    const notesList = [];
 
-    // 出庫(車庫 → 最初の出発地)
     if (garage && garage.useDep) {
       const depStart = curMin;
       const depEnd = depStart + garage.depMin;
       totalDriveMin += garage.depMin;
       totalDistKm += garage.depKm;
-
       timelineEvents.push({
         type: "garage_dep",
         name: garage.depName,
-        address: "車庫発(手入力概算移動)",
+        address: "車庫発(出庫移動)",
         arrMin: null,
         depMin: depStart,
         loadQty: 0,
         stayMin: 0,
         waitMin: 0,
+        readyWaitMin: 0,
         breakMin: 0,
         targetWindowText: "",
+        readyTimeText: "",
+        note: "",
         statusTag: "出庫",
         segHtml: `<span class="tag-local">出庫移動</span> <strong>${garage.depMin}分</strong> (${garage.depKm.toFixed(1)}km)`,
         segExportText: `出庫移動 ${garage.depMin}分 ${garage.depKm.toFixed(1)}km`
@@ -1711,26 +2146,28 @@ async function calculateCourseSchedule(targetStops, options) {
       curMin = depEnd;
     }
 
-    // 各地点ループ
     for (let idx = 0; idx < resolvedPoints.length; idx++) {
       const pt = resolvedPoints[idx];
       const rawArrMin = curMin;
-      let waitMin = 0;
+      let arrivalWaitMin = 0;
       let targetWindowText = "";
       let statusTag = "";
       let isLate = false;
       let lateDiff = 0;
 
-      // 到着時間枠判定 (±30分ルール)
+      if (pt.note && pt.note.trim()) {
+        notesList.push(`${pt.name}: ${pt.note.trim()}`);
+      }
+
+      // 指定着時間枠判定 (±30分ルール)
       const targetMin = parseTimeToMinutes(pt.targetTime, initialStartMin);
       if (targetMin !== null) {
         const earliestAllowed = targetMin - 30;
         const latestAllowed = targetMin + 30;
-        targetWindowText = `指定 ${pt.targetTime} (${formatMinutesToTime(earliestAllowed)}〜${formatMinutesToTime(latestAllowed)})`;
-
+        targetWindowText = `指定 ${pt.targetTime} (${formatMinutesToTime(earliestAllowed)}~${formatMinutesToTime(latestAllowed)})`;
         if (rawArrMin < earliestAllowed) {
-          waitMin = earliestAllowed - rawArrMin;
-          statusTag = `早着待機 ${waitMin}分`;
+          arrivalWaitMin = earliestAllowed - rawArrMin;
+          statusTag = `早着待機 ${arrivalWaitMin}分`;
         } else if (rawArrMin > latestAllowed) {
           isLate = true;
           lateDiff = rawArrMin - latestAllowed;
@@ -1742,37 +2179,51 @@ async function calculateCourseSchedule(targetStops, options) {
       }
 
       const assignedBreak = breakPlanMap[idx] || { preBreakMin: 0, postBreakMin: 0 };
-      let effectiveWaitMin = waitMin;
+      let effectiveArrivalWaitMin = arrivalWaitMin;
       let actualPreBreakMin = assignedBreak.preBreakMin;
-      if (actualPreBreakMin > 0 && effectiveWaitMin > 0) {
-        const absorbed = Math.min(effectiveWaitMin, actualPreBreakMin);
-        effectiveWaitMin -= absorbed;
+      if (actualPreBreakMin > 0 && effectiveArrivalWaitMin > 0) {
+        const absorbed = Math.min(effectiveArrivalWaitMin, actualPreBreakMin);
+        effectiveArrivalWaitMin -= absorbed;
       }
 
-      const workStartMin = rawArrMin + effectiveWaitMin + actualPreBreakMin;
+      // 荷物出来上がり時間判定 (センター到着後、出来上がり時刻までは積込・作業開始を待機)
+      const readyMin = parseTimeToMinutes(pt.readyTime, initialStartMin);
+      let readyWaitMin = 0;
+      let readyTimeText = "";
+      const afterArrAndBreakMin = rawArrMin + effectiveArrivalWaitMin + actualPreBreakMin;
+
+      if (readyMin !== null) {
+        readyTimeText = `出来上がり ${pt.readyTime}`;
+        if (afterArrAndBreakMin < readyMin) {
+          readyWaitMin = readyMin - afterArrAndBreakMin;
+          statusTag = statusTag ? `${statusTag} / 出来上がり待機 ${readyWaitMin}分` : `出来上がり待機 ${readyWaitMin}分`;
+        }
+      }
+
+      const combinedWaitMin = effectiveArrivalWaitMin + readyWaitMin;
+      const workStartMin = afterArrAndBreakMin + readyWaitMin;
       const stayMin = (stayMode === "uniform") ? uniformStay : (pt.stayMin || 0);
       const workEndMin = workStartMin + stayMin;
       const postBreakMin = assignedBreak.postBreakMin;
       const depMin = workEndMin + postBreakMin;
 
       totalStayMin += stayMin;
-      totalWaitMin += effectiveWaitMin;
+      totalWaitMin += combinedWaitMin;
+      totalReadyWaitMin += readyWaitMin;
       totalBreakMin += (actualPreBreakMin + postBreakMin);
 
       let segHtml = `<span style="color:var(--muted);">最終地点到着</span>`;
       let segExportText = "最終地点到着";
-
       if (idx < resolvedPoints.length - 1) {
         const seg = segments[idx];
         totalDriveMin += seg.driveMin;
         totalDistKm += seg.roadKm;
         totalTollYen += seg.tollYen;
-
         if (seg.useHwy) {
           highwayExplanations.push(
             `区間${idx + 1} (${pt.name} → ${resolvedPoints[idx + 1].name}): ${seg.routeDesc} (約${seg.roadKm}km / 約¥${seg.tollYen.toLocaleString()})`
           );
-          segHtml = `<span class="tag-etc">高速使用</span> <strong>${seg.driveMin}分</strong> (${seg.roadKm}km)<br><span style="font-size:0.74rem; color: #93c5fd;">${escapeHtml(seg.routeDesc)} / ¥${seg.tollYen.toLocaleString()}</span>`;
+          segHtml = `<span class="tag-etc">高速使用</span> <strong>${seg.driveMin}分</strong> (${seg.roadKm}km)<br><span style="font-size:0.72rem; color:#93c5fd;">${escapeHtml(seg.routeDesc)} / ¥${seg.tollYen.toLocaleString()}</span>`;
           segExportText = `高速(${seg.routeDesc}) ${seg.driveMin}分 ${seg.roadKm}km ¥${seg.tollYen}`;
         } else {
           segHtml = `<span class="tag-local">一般道</span> <strong>${seg.driveMin}分</strong> (${seg.roadKm}km)`;
@@ -1785,15 +2236,20 @@ async function calculateCourseSchedule(targetStops, options) {
         index: idx,
         name: pt.name,
         address: pt.address,
+        courseCode: pt.courseCode || "",
+        vehicleClass: pt.vehicleClass || "",
+        note: pt.note || "",
         loadQty: parseFloat(pt.loadQty || 0) || 0,
         rawArrMin,
         workStartMin,
         depMin,
         stayMin,
-        waitMin: effectiveWaitMin,
+        waitMin: combinedWaitMin,
+        readyWaitMin,
         preBreakMin: actualPreBreakMin,
         postBreakMin,
         targetWindowText,
+        readyTimeText,
         statusTag,
         isLate,
         segHtml,
@@ -1807,32 +2263,32 @@ async function calculateCourseSchedule(targetStops, options) {
       }
     }
 
-    // 帰庫(最終到着地 → 車庫)
     if (garage && garage.useRet) {
       const retStart = curMin;
       const retEnd = retStart + garage.retMin;
       totalDriveMin += garage.retMin;
       totalDistKm += garage.retKm;
-
       const lastStopEv = timelineEvents[timelineEvents.length - 1];
       if (lastStopEv) {
         lastStopEv.segHtml = `<span class="tag-local">帰庫移動</span> <strong>${garage.retMin}分</strong> (${garage.retKm.toFixed(1)}km)`;
         lastStopEv.segExportText = `帰庫移動 ${garage.retMin}分 ${garage.retKm.toFixed(1)}km`;
       }
-
       timelineEvents.push({
         type: "garage_ret",
         name: garage.retName,
-        address: "車庫着(手入力概算移動)",
+        address: "車庫着(帰庫移動)",
         arrMin: retEnd,
         depMin: null,
         loadQty: 0,
         stayMin: 0,
         waitMin: 0,
+        readyWaitMin: 0,
         breakMin: 0,
         targetWindowText: "",
+        readyTimeText: "",
+        note: "",
         statusTag: "帰庫完了",
-        segHtml: `<span style="color:var(--muted);">業務終了・帰庫完了</span>`,
+        segHtml: `<span style="color:var(--muted);">業務終了 帰庫完了</span>`,
         segExportText: "帰庫完了"
       });
       curMin = retEnd;
@@ -1849,22 +2305,22 @@ async function calculateCourseSchedule(targetStops, options) {
       totalDriveMin,
       totalStayMin,
       totalWaitMin,
+      totalReadyWaitMin,
       totalBreakMin,
-      totalDistKm,
+      totalDistKm: Math.round(totalDistKm * 10) / 10,
       totalTollYen,
       lateCount,
       loadSummary,
-      highwayExplanations
+      highwayExplanations,
+      notesList,
+      usedGoogleApi: Boolean(useGoogleApi)
     };
   }
 
   const baseResult = simulateTimeline({});
-
-  // 自動休憩割り当てロジック (最短30分単位・合計60分)
   if (breakRuleMode === "auto60") {
     const breakPlan = {};
     let remainingBreak = 60;
-
     for (const ev of baseResult.timelineEvents) {
       if (ev.type === "stop" && ev.waitMin >= 30 && remainingBreak >= 30) {
         const alloc = (ev.waitMin >= 60 && remainingBreak >= 60) ? 60 : 30;
@@ -1872,12 +2328,10 @@ async function calculateCourseSchedule(targetStops, options) {
         remainingBreak -= alloc;
       }
     }
-
     const stopEvents = baseResult.timelineEvents.filter(e => e.type === "stop");
     if (remainingBreak > 0 && stopEvents.length > 0) {
       const midTime1 = initialStartMin + Math.floor(baseResult.totalRestraintMin * 0.38);
       const midTime2 = initialStartMin + Math.floor(baseResult.totalRestraintMin * 0.68);
-
       const findBestStopIdx = (targetMidMin, excludeIdx = -1) => {
         let bestIdx = 0;
         let bestScore = Infinity;
@@ -1895,7 +2349,6 @@ async function calculateCourseSchedule(targetStops, options) {
         });
         return bestIdx;
       };
-
       if (remainingBreak === 60) {
         if (stopEvents.length >= 3) {
           const idx1 = findBestStopIdx(midTime1);
@@ -1914,14 +2367,14 @@ async function calculateCourseSchedule(targetStops, options) {
         breakPlan[idx1] = breakPlan[idx1] || { preBreakMin: 0, postBreakMin: 0 };
         breakPlan[idx1].postBreakMin += 30;
       }
+      return simulateTimeline(breakPlan);
     }
-    return simulateTimeline(breakPlan);
   }
   return baseResult;
 }
 
 // ==========================================
-// タイムラインHTML & サマリー生成共通ヘルパー
+// タイムライン HTML & サマリー生成
 // ==========================================
 function buildTimelineRowsHtml(simResult, garage) {
   let rowsHtml = "";
@@ -1931,7 +2384,7 @@ function buildTimelineRowsHtml(simResult, garage) {
       rowsHtml += `
         <tr class="row-garage">
           <td style="white-space:nowrap;"><strong>${depStr}</strong> 出庫</td>
-          <td><strong>${escapeHtml(ev.name)}</strong><br><span style="font-size:0.74rem; color:var(--muted);">${escapeHtml(ev.address)}</span></td>
+          <td><strong>${escapeHtml(ev.name)}</strong><br><span style="font-size:0.72rem; color:var(--muted);">${escapeHtml(ev.address)}</span></td>
           <td>-</td>
           <td>${ev.segHtml}</td>
         </tr>`;
@@ -1942,7 +2395,7 @@ function buildTimelineRowsHtml(simResult, garage) {
       rowsHtml += `
         <tr class="row-garage">
           <td style="white-space:nowrap;"><strong>${arrStr}</strong> 帰庫</td>
-          <td><strong>${escapeHtml(ev.name)}</strong><br><span style="font-size:0.74rem; color:var(--muted);">${escapeHtml(ev.address)}</span></td>
+          <td><strong>${escapeHtml(ev.name)}</strong><br><span style="font-size:0.72rem; color:var(--muted);">${escapeHtml(ev.address)}</span></td>
           <td>-</td>
           <td>${ev.segHtml}</td>
         </tr>`;
@@ -1952,14 +2405,15 @@ function buildTimelineRowsHtml(simResult, garage) {
     const rawArrStr = formatMinutesToTime(ev.rawArrMin);
     const workStartStr = formatMinutesToTime(ev.workStartMin);
     const depStr = formatMinutesToTime(ev.depMin);
-
     let timeHtml = "";
-    if (ev.index === 0 && !garage.useDep) {
+    if (ev.index === 0 && (!garage || !garage.useDep)) {
       timeHtml = `<strong>${depStr}</strong> 出発`;
     } else {
       timeHtml = `着 <strong>${rawArrStr}</strong>`;
-      if (ev.waitMin > 0) {
-        timeHtml += `<br><span class="tag-wait">早着待機 ${ev.waitMin}分(開始 ${workStartStr})</span>`;
+      if (ev.readyWaitMin > 0) {
+        timeHtml += `<br><span class="tag-wait">出来上がり待機 ${ev.readyWaitMin}分(開始${workStartStr})</span>`;
+      } else if (ev.waitMin > 0) {
+        timeHtml += `<br><span class="tag-wait">早着待機 ${ev.waitMin}分(開始${workStartStr})</span>`;
       }
       if (ev.preBreakMin > 0) {
         timeHtml += `<br><span class="tag-break">着後休憩 ${ev.preBreakMin}分</span>`;
@@ -1968,9 +2422,12 @@ function buildTimelineRowsHtml(simResult, garage) {
         const tagCls = ev.isLate ? "tag-late" : "tag-local";
         timeHtml += `<br><span class="${tagCls}" style="margin-top:2px;">${escapeHtml(ev.targetWindowText)}${ev.isLate ? " [" + ev.statusTag + "]" : ""}</span>`;
       }
-      if (ev.index < simResult.resolvedPoints.length - 1 || garage.useRet) {
-        timeHtml += `<br>発 <strong>${depStr}</strong>`;
+      if (ev.readyTimeText) {
+        timeHtml += `<br><span class="tag-local" style="margin-top:2px;">${escapeHtml(ev.readyTimeText)}</span>`;
       }
+    }
+    if (ev.index < simResult.resolvedPoints.length - 1 || (garage && garage.useRet)) {
+      timeHtml += `<br>発 <strong>${depStr}</strong>`;
     }
 
     let loadStayHtml = "";
@@ -1983,12 +2440,19 @@ function buildTimelineRowsHtml(simResult, garage) {
       loadStayHtml += `<br><span class="tag-break">休憩 ${totalNodeBreak}分</span>`;
     }
 
+    const metaBits = [];
+    if (ev.courseCode) metaBits.push(`コース:${ev.courseCode}`);
+    if (ev.vehicleClass) metaBits.push(`車格:${ev.vehicleClass}`);
+    if (ev.note) metaBits.push(`備考:${ev.note}`);
+
     rowsHtml += `
       <tr class="${totalNodeBreak > 0 ? "row-break" : ""}">
         <td style="white-space:nowrap;">${timeHtml}</td>
         <td>
-          <strong>${escapeHtml(ev.name)}</strong><br>
-          <span style="font-size:0.74rem; color:var(--muted);">${escapeHtml(ev.address)}</span>
+          <strong>${escapeHtml(ev.name)}</strong>
+          ${ev.usedGoogleApi ? `<span class="tag-api">API</span>` : ""}<br>
+          <span style="font-size:0.72rem; color:var(--muted);">${escapeHtml(ev.address)}</span>
+          ${metaBits.length > 0 ? `<br><span style="font-size:0.7rem; color:#fde68a;">${escapeHtml(metaBits.join(" / "))}</span>` : ""}
         </td>
         <td style="white-space:nowrap;">${loadStayHtml}</td>
         <td>${ev.segHtml}</td>
@@ -1999,14 +2463,35 @@ function buildTimelineRowsHtml(simResult, garage) {
 
 function buildSummaryHtml(simResult, vehicleSettings) {
   const ld = simResult.loadSummary;
+  const activeMat = getActiveMaterial();
+  const maxWorkMin = masterSettings.maxWorkHours * 60;
+  const maxDistKm = masterSettings.maxDistKm;
   const summaryLines = [];
+
   summaryLines.push(
-    `車格: <strong>${vehicleSettings.label}(上限${vehicleSettings.maxCap})</strong> | 各便積載内訳: [${ld.tripLoads.join(" / ")}] (総荷量: ${ld.totalCourseLoad})` +
-    (ld.isOverload ? ` <span style="color:#fca5a5; font-weight:bold;">※積載上限超過のため積載不可!</span>` : "")
+    `マテハン: <strong>${escapeHtml(activeMat.name)}(上限${vehicleSettings.maxCap})</strong> / 車格: <strong>${vehicleSettings.label}</strong> | 各便積載: [${ld.tripLoads.join(" / ")}](総荷量:${ld.totalCourseLoad})` +
+    (ld.isOverload ? ` <span style="color:#fca5a5; font-weight:bold;">※積載上限超過!</span>` : "")
   );
-  summaryLines.push(`休憩合計: <strong>${simResult.totalBreakMin}分</strong> (30分単位最適配置) / 早着待機合計: <strong>${simResult.totalWaitMin}分</strong>`);
+
+  const distWarn = simResult.totalDistKm > maxDistKm
+    ? ` <span style="color:#fca5a5; font-weight:bold;">※距離上限(${maxDistKm}km)超過!</span>`
+    : ` (上限${maxDistKm}km以内)`;
+  const workWarn = simResult.totalRestraintMin > maxWorkMin
+    ? ` <span style="color:#fca5a5; font-weight:bold;">※稼働上限(${masterSettings.maxWorkHours}h)超過!</span>`
+    : ` (上限${masterSettings.maxWorkHours}h以内)`;
+
+  summaryLines.push(
+    `総距離: <strong>${simResult.totalDistKm.toFixed(1)}km</strong>${distWarn} / 拘束判定:${workWarn}`
+  );
+  summaryLines.push(
+    `休憩合計: <strong>${simResult.totalBreakMin}分</strong> / 待機合計: <strong>${simResult.totalWaitMin}分</strong> (内出来上がり待機: ${simResult.totalReadyWaitMin}分)`
+  );
+
   if (simResult.lateCount > 0) {
-    summaryLines.push(`<span style="color:#fca5a5; font-weight:bold;">※指定時間枠(±30分)を超過している地点が ${simResult.lateCount}件あります。</span>`);
+    summaryLines.push(`<span style="color:#fca5a5; font-weight:bold;">※指定時間枠(±30分)超過が ${simResult.lateCount}件あります。</span>`);
+  }
+  if (simResult.notesList && simResult.notesList.length > 0) {
+    summaryLines.push(`<span style="color:#fde68a;">納品備考: ${escapeHtml(simResult.notesList.join(" ｜ "))}</span>`);
   }
   if (simResult.highwayExplanations.length > 0) {
     summaryLines.push(...simResult.highwayExplanations);
@@ -2025,7 +2510,7 @@ async function runSimulation(forceDemoMode = false) {
   }
   const calcBtn = document.getElementById("calcBtn");
   calcBtn.disabled = true;
-  calcBtn.textContent = "ルート・積載・休憩・時間枠を計算中...";
+  calcBtn.textContent = "ルート・積載・出来上がり待機・休憩・稼働時間を計算中...";
 
   try {
     const apiKey = localStorage.getItem(STORAGE_KEY_API) || "";
@@ -2043,7 +2528,7 @@ async function runSimulation(forceDemoMode = false) {
 
     let useGoogleApi = !forceDemoMode && Boolean(apiKey);
     if (useGoogleApi && !canUseGoogleApi(estimatedCalls)) {
-      alert(`本日のGoogle API利用上限(${DAILY_API_LIMIT}回)に達するため、デモ計算モードで実行します。`);
+      alert(`本日のGoogle API 利用上限(${DAILY_API_LIMIT}回)に達するため、デモ計算モードで実行します。`);
       useGoogleApi = false;
     }
 
@@ -2060,93 +2545,112 @@ async function runSimulation(forceDemoMode = false) {
       apiKey
     });
 
-    // 地図描画
-    routeLayerGroup.clearLayers();
-    const allCoords = [];
-    simResult.resolvedPoints.forEach((pt, idx) => {
-      allCoords.push([pt.geo.lat, pt.geo.lng]);
-      L.marker([pt.geo.lat, pt.geo.lng])
-        .addTo(routeLayerGroup)
-        .bindPopup(`<b>${idx + 1}. ${escapeHtml(pt.name)}</b> (荷量: ${pt.loadQty || 0})<br>${escapeHtml(pt.address)}`);
-    });
-    simResult.segments.forEach(seg => {
-      L.polyline(seg.segCoords, {
-        color: seg.useHwy ? "#3b82f6" : "#10b981",
-        weight: 5,
-        opacity: 0.85
-      }).addTo(routeLayerGroup);
-      seg.segCoords.forEach(c => allCoords.push(c));
-    });
-    if (allCoords.length >= 2) {
-      lastBounds = L.latLngBounds(allCoords);
-      map.fitBounds(lastBounds, { padding: [30, 30] });
-    }
-
-    // テーブル描画
-    const tbody = document.getElementById("resultTableBody");
-    tbody.innerHTML = buildTimelineRowsHtml(simResult, garage);
-
-    // CSV エクスポートデータ構築
-    lastSimulationRows = [];
-    simResult.timelineEvents.forEach((ev, i) => {
-      if (ev.type === "garage_dep") {
-        lastSimulationRows.push({
-          順: i + 1, 種別: "出庫", 名称: ev.name, 住所: ev.address, 荷量: 0,
-          指定枠: "", 到着時刻: "-", 待機_分: 0, 滞在_分: 0, 休憩_分: 0,
-          出発時刻: formatMinutesToTime(ev.depMin), ステータス: "出庫", 次区間詳細: ev.segExportText
-        });
-      } else if (ev.type === "garage_ret") {
-        lastSimulationRows.push({
-          順: i + 1, 種別: "帰庫", 名称: ev.name, 住所: ev.address, 荷量: 0,
-          指定枠: "", 到着時刻: formatMinutesToTime(ev.arrMin), 待機_分: 0, 滞在_分: 0, 休憩_分: 0,
-          出発時刻: "-", ステータス: "帰庫完了", 次区間詳細: ev.segExportText
-        });
-      } else {
-        const rawArrStr = formatMinutesToTime(ev.rawArrMin);
-        const depStr = formatMinutesToTime(ev.depMin);
-        const totalNodeBreak = ev.preBreakMin + ev.postBreakMin;
-        lastSimulationRows.push({
-          順: i + 1, 種別: "地点", 名称: ev.name, 住所: ev.address, 荷量: ev.loadQty,
-          指定枠: ev.targetWindowText || "指定なし",
-          到着時刻: (ev.index === 0 && !garage.useDep) ? "-" : rawArrStr,
-          待機_分: ev.waitMin, 滞在_分: ev.stayMin, 休憩_分: totalNodeBreak,
-          出発時刻: (ev.index === simResult.resolvedPoints.length - 1 && !garage.useRet) ? "-" : depStr,
-          ステータス: ev.statusTag || "正常", 次区間詳細: ev.segExportText
-        });
-      }
-    });
-
-    // KPI 更新
-    const workH = Math.floor(simResult.totalRestraintMin / 60);
-    const workM = simResult.totalRestraintMin % 60;
-    const kpiWorkEl = document.getElementById("kpiTotalWork");
-    kpiWorkEl.textContent = `${workH}時間${workM}分` + (simResult.totalRestraintMin > 720 ? " (12h超過!)" : " (12h以内)");
-    kpiWorkEl.className = simResult.totalRestraintMin > 720 ? "kpi-val danger" : "kpi-val accent";
-
-    const ld = simResult.loadSummary;
-    const kpiLoadEl = document.getElementById("kpiLoadStatus");
-    kpiLoadEl.textContent = `最大 ${ld.maxTripLoad} / ${vehicleSettings.maxCap}` + (ld.isOverload ? " (積載不可!)" : " (積載OK)");
-    kpiLoadEl.className = ld.isOverload ? "kpi-val danger" : "kpi-val accent";
-
-    const firstTimeStr = formatMinutesToTime(simResult.initialStartMin);
-    const endTimeStr = formatMinutesToTime(simResult.finalEndMin);
-    document.getElementById("kpiEndTime").textContent = `${firstTimeStr} → ${endTimeStr}`;
-
-    document.getElementById("kpiDriveInfo").textContent =
-      `走${simResult.totalDriveMin}分(${simResult.totalDistKm.toFixed(1)}km) / 休${simResult.totalBreakMin}分 / ¥${simResult.totalTollYen.toLocaleString()}`;
-
-    const hwyTextEl = document.getElementById("highwaySummaryText");
-    hwyTextEl.innerHTML = buildSummaryHtml(simResult, vehicleSettings);
-    hwyTextEl.style.color = "var(--text)";
-
-    document.getElementById("exportBtn").style.display = "inline-flex";
-    document.getElementById("printBtn").style.display = "inline-flex";
+    renderSimulationResult(simResult, garage, vehicleSettings);
   } catch (err) {
     alert("シミュレーション計算中にエラーが発生しました:\n" + err.message);
   } finally {
     calcBtn.disabled = false;
-    calcBtn.textContent = "最適ルート・積載・休憩・稼働時間をシミュレーション計算する";
+    calcBtn.textContent = "最適ルート・積載・出来上がり待機・休憩・稼働時間をシミュレーション計算する";
   }
+}
+
+function renderSimulationResult(simResult, garage, vehicleSettings) {
+  routeLayerGroup.clearLayers();
+  const allCoords = [];
+
+  simResult.resolvedPoints.forEach((pt, idx) => {
+    allCoords.push([pt.geo.lat, pt.geo.lng]);
+    const popupExtra = [
+      pt.readyTime ? `出来上がり: ${pt.readyTime}` : "",
+      pt.note ? `備考: ${pt.note}` : ""
+    ].filter(Boolean).join("<br>");
+
+    L.marker([pt.geo.lat, pt.geo.lng])
+      .addTo(routeLayerGroup)
+      .bindPopup(`<b>${idx + 1}. ${escapeHtml(pt.name)}</b> (荷量:${pt.loadQty || 0})<br>${escapeHtml(pt.address)}${popupExtra ? "<br>" + escapeHtml(popupExtra) : ""}`);
+  });
+
+  simResult.segments.forEach(seg => {
+    L.polyline(seg.segCoords, {
+      color: seg.useHwy ? "#3b82f6" : "#10b981",
+      weight: 5,
+      opacity: 0.85
+    }).addTo(routeLayerGroup);
+    seg.segCoords.forEach(c => allCoords.push(c));
+  });
+
+  if (allCoords.length >= 2) {
+    lastBounds = L.latLngBounds(allCoords);
+    setTimeout(() => {
+      map.invalidateSize({ animate: false });
+      map.fitBounds(lastBounds, { padding: [30, 30], animate: false });
+    }, 50);
+  }
+
+  document.getElementById("resultTableBody").innerHTML = buildTimelineRowsHtml(simResult, garage);
+
+  lastSimulationRows = [];
+  simResult.timelineEvents.forEach((ev, i) => {
+    if (ev.type === "garage_dep") {
+      lastSimulationRows.push({
+        順: i + 1, 種別: "出庫", コース: "", 車格: vehicleSettings.label,
+        名称: ev.name, 住所: ev.address, 荷量: 0,
+        指定枠: "", 荷物出来上がり: "", 到着時刻: "-", 待機_分: 0,
+        滞在_分: 0, 休憩_分: 0, 出発時刻: formatMinutesToTime(ev.depMin),
+        納品備考: "", ステータス: "出庫", 次区間詳細: ev.segExportText
+      });
+    } else if (ev.type === "garage_ret") {
+      lastSimulationRows.push({
+        順: i + 1, 種別: "帰庫", コース: "", 車格: vehicleSettings.label,
+        名称: ev.name, 住所: ev.address, 荷量: 0,
+        指定枠: "", 荷物出来上がり: "", 到着時刻: formatMinutesToTime(ev.arrMin), 待機_分: 0,
+        滞在_分: 0, 休憩_分: 0, 出発時刻: "-",
+        納品備考: "", ステータス: "帰庫完了", 次区間詳細: ev.segExportText
+      });
+    } else {
+      const rawArrStr = formatMinutesToTime(ev.rawArrMin);
+      const depStr = formatMinutesToTime(ev.depMin);
+      const totalNodeBreak = ev.preBreakMin + ev.postBreakMin;
+      lastSimulationRows.push({
+        順: i + 1, 種別: "地点", コース: ev.courseCode || "", 車格: ev.vehicleClass || vehicleSettings.label,
+        名称: ev.name, 住所: ev.address, 荷量: ev.loadQty,
+        指定枠: ev.targetWindowText || "指定なし",
+        荷物出来上がり: ev.readyTimeText || "",
+        到着時刻: (ev.index === 0 && (!garage || !garage.useDep)) ? "-" : rawArrStr,
+        待機_分: ev.waitMin, 滞在_分: ev.stayMin, 休憩_分: totalNodeBreak,
+        出発時刻: (ev.index === simResult.resolvedPoints.length - 1 && (!garage || !garage.useRet)) ? "-" : depStr,
+        納品備考: ev.note || "",
+        ステータス: ev.statusTag || "正常", 次区間詳細: ev.segExportText
+      });
+    }
+  });
+
+  const maxWorkMin = masterSettings.maxWorkHours * 60;
+  const workH = Math.floor(simResult.totalRestraintMin / 60);
+  const workM = simResult.totalRestraintMin % 60;
+  const kpiWorkEl = document.getElementById("kpiTotalWork");
+  const isWorkOver = simResult.totalRestraintMin > maxWorkMin;
+  kpiWorkEl.textContent = `${workH}時間${workM}分 ${isWorkOver ? `(${masterSettings.maxWorkHours}h超過!)` : `(${masterSettings.maxWorkHours}h以内)`}`;
+  kpiWorkEl.className = isWorkOver ? "kpi-val danger" : "kpi-val accent";
+
+  const ld = simResult.loadSummary;
+  const kpiLoadEl = document.getElementById("kpiLoadStatus");
+  kpiLoadEl.textContent = `最大 ${ld.maxTripLoad} / ${vehicleSettings.maxCap}` + (ld.isOverload ? " (超過!)" : " (OK)");
+  kpiLoadEl.className = ld.isOverload ? "kpi-val danger" : "kpi-val accent";
+
+  const firstTimeStr = formatMinutesToTime(simResult.initialStartMin);
+  const endTimeStr = formatMinutesToTime(simResult.finalEndMin);
+  document.getElementById("kpiEndTime").textContent = `${firstTimeStr} → ${endTimeStr}`;
+
+  const distOver = simResult.totalDistKm > masterSettings.maxDistKm;
+  document.getElementById("kpiDriveInfo").innerHTML =
+    `走${simResult.totalDriveMin}分(<span style="color:${distOver ? "#fca5a5" : "#fff"};">${simResult.totalDistKm.toFixed(1)}km</span>) / 休${simResult.totalBreakMin}分 / ¥${simResult.totalTollYen.toLocaleString()}`;
+
+  const hwyTextEl = document.getElementById("highwaySummaryText");
+  hwyTextEl.innerHTML = buildSummaryHtml(simResult, vehicleSettings);
+  hwyTextEl.style.color = "var(--text)";
+  document.getElementById("exportBtn").style.display = "inline-flex";
+  document.getElementById("printBtn").style.display = "inline-flex";
 }
 
 function formatMinutesToTime(totalMin) {
@@ -2158,83 +2662,91 @@ function formatMinutesToTime(totalMin) {
 }
 
 // ==========================================
-// CSV一括読込 お任せコース組み (往復高速・全ルール対応) & 一括印刷
+// 空フォーマットCSV・サンプルCSV・お任せ自動コース組み
 // ==========================================
 function downloadBlankFormatCSV() {
-  const csvContent = "\uFEFF納品先名称,住所,荷量,滞在時間_分,指定着時間,行き高速,帰り高速\n" +
-                     ",,,,,,\n" +
-                     ",,,,,,\n";
+  const csvContent = "\uFEFF納品先名称,住所,荷量,滞在時間_分,指定着時間,行き高速,帰り高速,コース,車格,納品備考,荷物出来上がり時間\n" +
+    ",,,,,,,,,,\n" +
+    ",,,,,,,,,,\n";
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "お任せコース作成用_往復高速対応_空フォーマット.csv";
+  a.download = "お任せコース作成用_拡張空フォーマット.csv";
   a.click();
   URL.revokeObjectURL(url);
 }
 
 function downloadSampleCSV() {
-  const csvContent = "\uFEFF納品先名称,住所,荷量,滞在時間_分,指定着時間,行き高速,帰り高速\n" +
-                     "草加八幡店,埼玉県草加市八幡町,10,20,08:30,不使用,不使用\n" +
-                     "赤羽台店,東京都北区赤羽台,11,25,10:00,不使用,使用\n" +
-                     "船橋物流拠点,千葉県船橋市浜町,14,25,13:00,使用,不使用\n" +
-                     "柏の葉ストア,千葉県柏市若柴,8,20,14:30,不使用,使用\n" +
-                     "川崎臨海センター,神奈川県川崎市川崎区東扇島,18,30,17:00,使用,使用\n";
+  const csvContent = "\uFEFF納品先名称,住所,荷量,滞在時間_分,指定着時間,行き高速,帰り高速,コース,車格,納品備考,荷物出来上がり時間\n" +
+    "草加八幡店,埼玉県草加市八幡町,10,20,08:30,不使用,不使用,1コース,4t,高さ3.8m注意,\n" +
+    "赤羽台店,東京都北区赤羽台,11,25,10:00,不使用,使用,1コース,4t,4t車まで可,\n" +
+    "船橋物流拠点,千葉県船橋市浜町,14,25,13:00,使用,不使用,2コース,4t,積込待機あり,12:15\n" +
+    "柏の葉ストア,千葉県柏市若柴,8,20,14:30,不使用,使用,2コース,4t,,\n" +
+    "川崎臨海センター,神奈川県川崎市川崎区東扇島,18,30,17:00,使用,使用,3コース,4t,大型ゲート指定,\n";
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "配送先一括サンプル_往復高速_荷量混載対応.csv";
+  a.download = "配送先一括サンプル_拡張フォーマット.csv";
   a.click();
   URL.revokeObjectURL(url);
 }
 
 function isHighwayFlagTrue(val) {
-  return ["1", "true", "TRUE", "使用", "高速", "○", "yes", "往復"].includes(String(val || "").trim());
+  return ["1", "true", "TRUE", "使用", "高速", "o", "○", "yes", "往復"].includes(String(val || "").trim());
 }
 
-// 運行リスト (trips = [ [deliv1, deliv2], [deliv3], ... ]) から stops 配列を構築
-// 行き高速(useHighwayOut) と 帰り高速(useHighwayBack) の両方を各区間に正確に反映
 function buildStopsFromTrips(hubName, hubAddress, trips) {
   const built = [];
   trips.forEach((tripDeliveries, tIdx) => {
     const tripTotalLoad = tripDeliveries.reduce((sum, d) => sum + (d.loadQty || 0), 0);
+    const firstDel = tripDeliveries[0] || {};
+    const earliestReady = tripDeliveries.map(d => d.readyTime).filter(Boolean).sort()[0] || "";
 
-    // センター出発 → 1件目の納品先への区間は 1件目の「行き高速」を使用
     built.push({
       name: tIdx === 0 ? `${hubName} (1便出発 / 積載${tripTotalLoad})` : `${hubName} (${tIdx + 1}便積込 / 積載${tripTotalLoad})`,
       address: hubAddress,
       loadQty: 0,
       stayMin: tIdx === 0 ? 15 : 20,
       targetTime: "",
-      useHighway: Boolean(tripDeliveries[0]?.useHighwayOut)
+      readyTime: earliestReady,
+      courseCode: firstDel.courseCode || "",
+      vehicleClass: firstDel.vehicleClass || "",
+      note: earliestReady ? `荷物出来上がり ${earliestReady} 以降積込` : "",
+      useHighway: Boolean(firstDel.useHighwayOut)
     });
 
     tripDeliveries.forEach((del, dIdx) => {
       const isLastInTrip = (dIdx === tripDeliveries.length - 1);
-      // 便の途中なら次納品先の「行き高速」、便の最後の納品先ならセンターへの「帰り高速」を適用
       const nextUseHwy = !isLastInTrip
         ? Boolean(tripDeliveries[dIdx + 1].useHighwayOut)
         : Boolean(del.useHighwayBack);
-
       built.push({
         name: del.name,
         address: del.address,
         loadQty: del.loadQty,
         stayMin: del.stayMin,
         targetTime: del.targetTime,
+        readyTime: del.readyTime || "",
+        courseCode: del.courseCode || "",
+        vehicleClass: del.vehicleClass || "",
+        note: del.note || "",
         useHighway: nextUseHwy
       });
     });
   });
 
-  // 最終帰着センター
   built.push({
     name: `${hubName} (最終帰着)`,
     address: hubAddress,
     loadQty: 0,
     stayMin: 10,
     targetTime: "",
+    readyTime: "",
+    courseCode: "",
+    vehicleClass: "",
+    note: "",
     useHighway: false
   });
   return built;
@@ -2243,10 +2755,12 @@ function buildStopsFromTrips(hubName, hubAddress, trips) {
 async function handleAutoCourseCSV(event) {
   const file = event.target.files[0];
   if (!file) return;
-
   const hubName = document.getElementById("hubNameInput").value.trim() || "起点センター";
   const hubAddress = document.getElementById("hubAddressInput").value.trim() || "埼玉県八潮市大瀬";
   const vehicleSettings = getVehicleSettings();
+  const maxWorkMin = masterSettings.maxWorkHours * 60;
+  const maxDistKm = masterSettings.maxDistKm;
+  const maxTripsLimit = masterSettings.maxTrips;
 
   const reader = new FileReader();
   reader.onload = async function(e) {
@@ -2259,17 +2773,19 @@ async function handleAutoCourseCSV(event) {
       const deliveries = rows
         .filter(r => (r["納品先名称"] || r["名称"] || r["地点名"]) && r["住所"])
         .map((row, i) => {
-          // 従来の「高速使用」列1つだけのCSVにも対応（指定時は行き・帰り両方に適用）
           const legacyHwy = row["高速使用"] !== undefined ? isHighwayFlagTrue(row["高速使用"]) : false;
           const outHwy = row["行き高速"] !== undefined ? isHighwayFlagTrue(row["行き高速"]) : legacyHwy;
           const backHwy = row["帰り高速"] !== undefined ? isHighwayFlagTrue(row["帰り高速"]) : legacyHwy;
-
           return {
             name: String(row["納品先名称"] || row["名称"] || row["地点名"] || `納品先${i + 1}`).trim(),
             address: String(row["住所"] || "").trim(),
             loadQty: parseFloat(row["荷量"] || row["積載量"] || row["個数"] || "0") || 0,
             stayMin: parseInt(row["滞在時間_分"] || row["滞在時間"] || row["滞在時間(分)"] || "25", 10) || 25,
             targetTime: String(row["指定着時間"] || row["到着指定時間"] || "").trim(),
+            readyTime: String(row["荷物出来上がり時間"] || row["出来上がり時間"] || row["出来上がり"] || "").trim(),
+            courseCode: String(row["コース"] || "").trim(),
+            vehicleClass: String(row["車格"] || "").trim(),
+            note: String(row["納品備考"] || row["備考"] || "").trim(),
             useHighwayOut: outHwy,
             useHighwayBack: backHwy
           };
@@ -2282,11 +2798,13 @@ async function handleAutoCourseCSV(event) {
       const oversizedItems = deliveries.filter(d => d.loadQty > vehicleSettings.maxCap);
       if (oversizedItems.length > 0) {
         const names = oversizedItems.map(d => `${d.name}(荷量:${d.loadQty})`).join(", ");
-        alert(`【積載不可警告】選択中の車格「${vehicleSettings.label}(最大${vehicleSettings.maxCap})」の積載上限を単独で超える納品先があります:\n${names}\n※該当案件は単独1運行として割り当てます。`);
+        alert(`【積載上限警告】 現在の積載上限(${vehicleSettings.maxCap})を単独で超える納品先があります:\n${names}\n※該当案件は単独運行として割り当てます。`);
       }
 
-      // 指定着時間が設定されているものは早い順にソート
       deliveries.sort((a, b) => {
+        if (a.courseCode && b.courseCode && a.courseCode !== b.courseCode) {
+          return a.courseCode.localeCompare(b.courseCode, "ja");
+        }
         if (a.targetTime && b.targetTime) return a.targetTime.localeCompare(b.targetTime);
         if (a.targetTime) return -1;
         if (b.targetTime) return 1;
@@ -2313,26 +2831,29 @@ async function handleAutoCourseCSV(event) {
         apiKey: ""
       };
 
+      const isWithinLimits = (res) => (
+        res.totalRestraintMin <= maxWorkMin &&
+        res.totalDistKm <= maxDistKm &&
+        res.lateCount === 0
+      );
+
       autoGeneratedCourses = [];
+      apiCalculatedCourseCache = {};
       let currentTrips = [];
 
       for (let i = 0; i < deliveries.length; i++) {
         const item = deliveries[i];
 
-        // パターンA: 現在の最終運行に混載テスト（往復の高速・出庫/帰庫・休憩60分込みで12h以内＆遅延0をチェック）
+        // パターンA: 最終運行に混載
         let placedInExistingTrip = false;
         if (currentTrips.length > 0) {
           const lastTrip = currentTrips[currentTrips.length - 1];
           const lastTripLoad = lastTrip.reduce((s, d) => s + d.loadQty, 0);
-
           if (lastTripLoad + item.loadQty <= vehicleSettings.maxCap) {
-            const testTrips = currentTrips.map((t, idx) =>
-              idx === currentTrips.length - 1 ? [...t, item] : [...t]
-            );
+            const testTrips = currentTrips.map((t, idx) => idx === currentTrips.length - 1 ? [...t, item] : [...t]);
             const testStops = buildStopsFromTrips(hubName, hubAddress, testTrips);
             const testRes = await calculateCourseSchedule(testStops, simOptionsDemoOnly);
-
-            if (testRes.totalRestraintMin <= 720 && testRes.lateCount === 0) {
+            if (isWithinLimits(testRes)) {
               currentTrips = testTrips;
               placedInExistingTrip = true;
             }
@@ -2340,19 +2861,18 @@ async function handleAutoCourseCSV(event) {
         }
         if (placedInExistingTrip) continue;
 
-        // パターンB: 同じコース内で新しい運行(2便目 or 3便目)として追加テスト（往復の高速・出庫/帰庫・休憩60分込みで12h以内＆遅延0をチェック）
-        if (currentTrips.length < 3) {
+        // パターンB: 同一コース内の新運行 (設定マスターの最大運行数以内)
+        if (currentTrips.length < maxTripsLimit) {
           const testTripsNewRun = [...currentTrips, [item]];
           const testStopsNewRun = buildStopsFromTrips(hubName, hubAddress, testTripsNewRun);
           const testResNewRun = await calculateCourseSchedule(testStopsNewRun, simOptionsDemoOnly);
-
-          if (testResNewRun.totalRestraintMin <= 720 && testResNewRun.lateCount === 0) {
+          if (isWithinLimits(testResNewRun)) {
             currentTrips = testTripsNewRun;
             continue;
           }
         }
 
-        // パターンC: 3運行上限、12時間上限、または時間枠遅延に達するため、現在のコースを確定し新コースを開始
+        // パターンC: 新コース確定
         if (currentTrips.length > 0) {
           const confirmedStops = buildStopsFromTrips(hubName, hubAddress, currentTrips);
           const confirmedRes = await calculateCourseSchedule(confirmedStops, simOptionsDemoOnly);
@@ -2364,7 +2884,8 @@ async function handleAutoCourseCSV(event) {
             totalRestraintMin: confirmedRes.totalRestraintMin,
             totalDistKm: confirmedRes.totalDistKm,
             maxTripLoad: confirmedRes.loadSummary.maxTripLoad,
-            isOverload: confirmedRes.loadSummary.isOverload
+            isOverload: confirmedRes.loadSummary.isOverload,
+            isApiCalculated: false
           });
         }
         currentTrips = [[item]];
@@ -2381,7 +2902,8 @@ async function handleAutoCourseCSV(event) {
           totalRestraintMin: finalRes.totalRestraintMin,
           totalDistKm: finalRes.totalDistKm,
           maxTripLoad: finalRes.loadSummary.maxTripLoad,
-          isOverload: finalRes.loadSummary.isOverload
+          isOverload: finalRes.loadSummary.isOverload,
+          isApiCalculated: false
         });
       }
 
@@ -2389,7 +2911,7 @@ async function handleAutoCourseCSV(event) {
       if (autoGeneratedCourses.length > 0) {
         applyGeneratedCourse(0, true);
       }
-      alert(`全${deliveries.length}件の納品先から、往復高速・車格「${vehicleSettings.label}(上限${vehicleSettings.maxCap})」・最大3運行・往復拘束12h以内の全条件で【${autoGeneratedCourses.length}コース】を自動編成しました。\n(※「全コース一括印刷 / PDF保存」で全コースまとめて出力できます)`);
+      alert(`全${deliveries.length}件から、上限${masterSettings.maxWorkHours}h・上限${masterSettings.maxDistKm}km・最大${maxTripsLimit}運行・出来上がり時間待機を考慮し【${autoGeneratedCourses.length}コース】を自動編成しました。\n(一覧から「全コースをAPIで一括計算」「全コースを一括保存」「一括印刷/PDF」が可能です)`);
     } catch (err) {
       alert("自動コース組みエラー: " + err.message);
     }
@@ -2404,16 +2926,26 @@ function renderGeneratedCoursesUI() {
     listEl.innerHTML = "";
     return;
   }
-
   const vSettings = getVehicleSettings();
+  const maxWorkMin = masterSettings.maxWorkHours * 60;
+  const maxDistKm = masterSettings.maxDistKm;
+
   let html = `
-    <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-      <span style="font-size:0.82rem; color:#e9d5ff; font-weight:bold;">
-        自動編成されたコース一覧 (全${autoGeneratedCourses.length}コース / API消費0回):
+    <div style="margin-top:10px; display: flex; justify-content: space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+      <span style="font-size:0.82rem; color: #e9d5ff; font-weight:bold;">
+        自動編成コース一覧 (全${autoGeneratedCourses.length}コース)
       </span>
-      <button class="btn btn-accent btn-sm" id="batchPrintBtn" onclick="printAllGeneratedCourses()">
-        全${autoGeneratedCourses.length}コース一括印刷 / PDF保存
-      </button>
+      <div class="flex-row">
+        <button class="btn btn-primary btn-sm" id="batchApiCalcBtn" onclick="calculateAllGeneratedCoursesWithApi()">
+          全${autoGeneratedCourses.length}コースをAPIで一括計算
+        </button>
+        <button class="btn btn-warn btn-sm" id="batchSaveBtn" onclick="saveAllGeneratedCourses()">
+          全${autoGeneratedCourses.length}コースを一括保存
+        </button>
+        <button class="btn btn-accent btn-sm" id="batchPrintBtn" onclick="printAllGeneratedCourses()">
+          一括印刷 / PDF 保存
+        </button>
+      </div>
     </div>
   `;
 
@@ -2426,32 +2958,115 @@ function renderGeneratedCoursesUI() {
         const hwyMark = (d.useHighwayOut || d.useHighwayBack)
           ? `[高:${d.useHighwayOut ? "往" : ""}${d.useHighwayBack ? "復" : ""}]`
           : "";
-        return `${d.name}${hwyMark}`;
-      }).join(" → ");
+        const readyMark = d.readyTime ? `[出来:${d.readyTime}]` : "";
+        return `${d.name}${hwyMark}${readyMark}`;
+      }).join("→");
       return `${tIdx + 1}便[${dNames} (荷${tLoad})]`;
     }).join(" / ");
 
-    const timeTag = c.totalRestraintMin > 720
-      ? `<span class="tag-late">12h 超過注意</span>`
-      : `<span class="tag-etc">12h以内OK</span>`;
-
+    const isOver = c.totalRestraintMin > maxWorkMin || c.totalDistKm > maxDistKm;
+    const timeTag = isOver
+      ? `<span class="tag-late">上限超過注意</span>`
+      : `<span class="tag-etc">条件内OK</span>`;
     const loadTag = c.isOverload
-      ? `<span class="tag-late">積載不可(${c.maxTripLoad}/${vSettings.maxCap})</span>`
+      ? `<span class="tag-late">積載超過(${c.maxTripLoad}/${vSettings.maxCap})</span>`
       : `<span class="tag-load">最大積載 ${c.maxTripLoad}/${vSettings.maxCap}</span>`;
+    const apiBadge = c.isApiCalculated ? `<span class="tag-api">API実測・動線済</span>` : `<span class="tag-local">デモ計算</span>`;
 
     html += `
       <div class="generated-course-chip">
         <div style="flex:1;">
-          <strong>${escapeHtml(c.courseTitle)}</strong> ${timeTag} ${loadTag}<br>
-          <span style="color:var(--muted); font-size:0.75rem;">
-            往復拘束: ${h}時間${m}分 / 距離: ${c.totalDistKm.toFixed(1)}km | ${escapeHtml(tripSummary)}
+          <strong>${escapeHtml(c.courseTitle)}</strong> ${apiBadge} ${timeTag} ${loadTag}<br>
+          <span style="color:var(--muted); font-size:0.74rem;">
+            拘束:${h}時間${m}分 / 距離:${c.totalDistKm.toFixed(1)}km | ${escapeHtml(tripSummary)}
           </span>
         </div>
-        <button class="btn btn-primary btn-sm" onclick="applyGeneratedCourse(${idx}, true)">このコースを表示</button>
+        <button class="btn btn-primary btn-sm" onclick="applyGeneratedCourse(${idx})">このコースを表示</button>
       </div>
     `;
   });
   listEl.innerHTML = html;
+}
+
+// ② 自動コース一覧から全コースをAPIで一括計算 (動線ポリライン保存)
+async function calculateAllGeneratedCoursesWithApi() {
+  if (!autoGeneratedCourses || autoGeneratedCourses.length === 0) {
+    return alert("API計算する自動編成コースがありません。");
+  }
+  const apiKey = localStorage.getItem(STORAGE_KEY_API) || "";
+  if (!apiKey) {
+    return alert("Google Maps APIキーが設定されていません。「Google Maps API キー設定」からキーを保存してください。");
+  }
+
+  const startTimeStr = document.getElementById("startTime").value || "07:00";
+  const highwayMode = document.getElementById("highwayMode").value;
+  const stayMode = document.getElementById("stayMode").value;
+  const uniformStay = parseInt(document.getElementById("uniformStayMin").value || "0", 10);
+  const vehicleSettings = getVehicleSettings();
+  const breakRuleMode = document.getElementById("breakRuleMode").value;
+  const garage = getGarageConfig();
+
+  // 概算API回数チェック
+  let estimatedTotalCalls = 0;
+  autoGeneratedCourses.forEach(c => {
+    const uncached = c.stops.filter(s => !geocodeCache[s.address.trim()]).length;
+    estimatedTotalCalls += uncached + Math.max(0, c.stops.length - 1);
+  });
+
+  if (!canUseGoogleApi(estimatedTotalCalls)) {
+    if (!confirm(`全コースのAPI計算で推定 ${estimatedTotalCalls} 回のAPIを消費します（本日残枠: ${DAILY_API_LIMIT - getQuotaData().count}回）。実行しますか？`)) {
+      return;
+    }
+  }
+
+  const btn = document.getElementById("batchApiCalcBtn");
+  const origText = btn ? btn.textContent : "";
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "全コースをAPI計算中...";
+  }
+
+  try {
+    for (let i = 0; i < autoGeneratedCourses.length; i++) {
+      if (!canUseGoogleApi(2)) {
+        alert(`本日のAPI上限(${DAILY_API_LIMIT}回)に達したため、${i}コース目まで計算しました。`);
+        break;
+      }
+      if (btn) btn.textContent = `API計算中 (${i + 1} / ${autoGeneratedCourses.length})...`;
+
+      const course = autoGeneratedCourses[i];
+      const simRes = await calculateCourseSchedule(course.stops, {
+        startTimeStr,
+        highwayMode,
+        stayMode,
+        uniformStay,
+        vehicleMult: vehicleSettings.tollMult,
+        maxCap: vehicleSettings.maxCap,
+        breakRuleMode,
+        garage,
+        useGoogleApi: true,
+        apiKey
+      });
+
+      course.totalRestraintMin = simRes.totalRestraintMin;
+      course.totalDistKm = simRes.totalDistKm;
+      course.maxTripLoad = simRes.loadSummary.maxTripLoad;
+      course.isOverload = simRes.loadSummary.isOverload;
+      course.isApiCalculated = true;
+      apiCalculatedCourseCache[i] = { simResult: simRes };
+    }
+
+    renderGeneratedCoursesUI();
+    applyGeneratedCourse(0);
+    alert("自動編成コースのAPI一括計算（実道路距離・時間・地図動線データ取得）が完了しました。");
+  } catch (err) {
+    alert("API一括計算中にエラーが発生しました:\n" + err.message);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = origText;
+    }
+  }
 }
 
 function applyGeneratedCourse(idx, forceDemo = false) {
@@ -2460,17 +3075,22 @@ function applyGeneratedCourse(idx, forceDemo = false) {
   document.getElementById("courseNameInput").value = target.courseTitle;
   stops = JSON.parse(JSON.stringify(target.stops));
   renderStops();
-  runSimulation(forceDemo);
+
+  const cachedApi = apiCalculatedCourseCache[idx];
+  if (cachedApi && cachedApi.simResult && !forceDemo) {
+    renderSimulationResult(cachedApi.simResult, getGarageConfig(), getVehicleSettings());
+  } else {
+    runSimulation(true);
+  }
 }
 
 // ==========================================
-// 複数コース一括印刷 / PDF出力 (1コース = A4横1枚)
+// ② 一括印刷 / PDF出力 (API動線ポリライン反映)
 // ==========================================
 async function printAllGeneratedCourses() {
   if (!autoGeneratedCourses || autoGeneratedCourses.length === 0) {
     return alert("一括印刷する自動編成コースがありません。");
   }
-
   const btn = document.getElementById("batchPrintBtn");
   const originalText = btn ? btn.textContent : "";
   if (btn) {
@@ -2487,6 +3107,7 @@ async function printAllGeneratedCourses() {
     const vehicleSettings = getVehicleSettings();
     const breakRuleMode = document.getElementById("breakRuleMode").value;
     const garage = getGarageConfig();
+    const maxWorkMin = masterSettings.maxWorkHours * 60;
 
     const simOptions = {
       startTimeStr,
@@ -2503,27 +3124,28 @@ async function printAllGeneratedCourses() {
 
     const batchContainer = document.getElementById("batchPrintContainer");
     batchContainer.innerHTML = "";
-
     batchMapInstances.forEach(m => { try { m.remove(); } catch (e) {} });
     batchMapInstances = [];
 
     const calculatedList = [];
     for (let i = 0; i < autoGeneratedCourses.length; i++) {
       const course = autoGeneratedCourses[i];
-      const simResult = await calculateCourseSchedule(course.stops, simOptions);
+      // API計算済みキャッシュがあれば実道路動線・実測値を優先使用
+      const cached = apiCalculatedCourseCache[i];
+      const simResult = (cached && cached.simResult)
+        ? cached.simResult
+        : await calculateCourseSchedule(course.stops, simOptions);
+
       calculatedList.push({ course, simResult });
 
       const workH = Math.floor(simResult.totalRestraintMin / 60);
       const workM = simResult.totalRestraintMin % 60;
-      const workStr = `${workH}時間${workM}分` + (simResult.totalRestraintMin > 720 ? " (超過!)" : " (OK)");
-
+      const workStr = `${workH}時間${workM}分 ${simResult.totalRestraintMin > maxWorkMin ? "(超過!)" : "(OK)"}`;
       const ld = simResult.loadSummary;
-      const loadStr = `最大 ${ld.maxTripLoad} / ${vehicleSettings.maxCap}` + (ld.isOverload ? " (不可!)" : " (OK)");
-
+      const loadStr = `最大 ${ld.maxTripLoad} / ${vehicleSettings.maxCap}` + (ld.isOverload ? "(不可!)" : "(OK)");
       const firstTimeStr = formatMinutesToTime(simResult.initialStartMin);
       const endTimeStr = formatMinutesToTime(simResult.finalEndMin);
       const driveStr = `走${simResult.totalDriveMin}分(${simResult.totalDistKm.toFixed(1)}km) / 休${simResult.totalBreakMin}分 / ¥${simResult.totalTollYen.toLocaleString()}`;
-
       const summaryHtml = buildSummaryHtml(simResult, vehicleSettings);
       const rowsHtml = buildTimelineRowsHtml(simResult, garage);
 
@@ -2532,18 +3154,18 @@ async function printAllGeneratedCourses() {
       pageDiv.innerHTML = `
         <div class="batch-header">
           <div>
-            <h1>運行指示書: ${escapeHtml(course.courseTitle)} (${i + 1} / ${autoGeneratedCourses.length})</h1>
-            <div style="font-size:8pt; color:#475569;">作成ツール: 配送ルート・稼働時間シミュレーター Ver3.2</div>
+            <h1>運行指示書: ${escapeHtml(course.courseTitle)} (${i + 1} / ${autoGeneratedCourses.length}) ${simResult.usedGoogleApi ? "[API動線反映]" : ""}</h1>
+            <div style="font-size: 7.8pt; color: #475569;">作成ツール: 配送ルート・稼働時間シミュレーター Ver3.3</div>
           </div>
           <div class="batch-meta">
-            運行日付: ${runDate} | 車格: ${vehicleSettings.label} (最大積載${vehicleSettings.maxCap})
+            運行日付: ${runDate} | 車格: ${vehicleSettings.label} (上限${vehicleSettings.maxCap}) | 稼働上限: ${masterSettings.maxWorkHours}h / 距離上限: ${masterSettings.maxDistKm}km
           </div>
         </div>
         <div class="batch-grid">
           <div>
             <div class="kpi-grid">
               <div class="kpi-box">
-                <div class="kpi-label">総拘束時間(12h上限)</div>
+                <div class="kpi-label">総拘束時間(${masterSettings.maxWorkHours}h上限)</div>
                 <div class="kpi-val">${workStr}</div>
               </div>
               <div class="kpi-box">
@@ -2560,14 +3182,14 @@ async function printAllGeneratedCourses() {
               </div>
             </div>
             <div class="batch-summary-box">
-              <strong>運行・積載・高速・休憩サマリー:</strong>
-              <div style="margin-top:1px; color:#1e293b;">${summaryHtml}</div>
+              <strong>運行・積載・高速・休憩・備考サマリー:</strong>
+              <div style="margin-top:1px; color: #1e293b;">${summaryHtml}</div>
             </div>
             <table>
               <thead>
                 <tr>
-                  <th style="width: 22%;">時刻 / 指定枠</th>
-                  <th style="width: 31%;">地点名 / 住所</th>
+                  <th style="width: 23%;">時刻 / 指定枠・出来上がり</th>
+                  <th style="width: 30%;">地点名 / 住所 / 備考</th>
                   <th style="width: 15%;">荷量 / 滞在</th>
                   <th style="width: 32%;">次区間ルート / 備考</th>
                 </tr>
@@ -2586,12 +3208,10 @@ async function printAllGeneratedCourses() {
     }
 
     document.body.classList.add("preparing-batch-print");
-
     setTimeout(() => {
       calculatedList.forEach(({ simResult }, i) => {
         const bMap = L.map(`batchMap_${i}`, { zoomControl: false, attributionControl: false }).setView([35.75, 139.78], 10);
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(bMap);
-
         const coords = [];
         simResult.resolvedPoints.forEach(pt => {
           coords.push([pt.geo.lat, pt.geo.lng]);
@@ -2599,13 +3219,12 @@ async function printAllGeneratedCourses() {
         });
         simResult.segments.forEach(seg => {
           L.polyline(seg.segCoords, {
-            color: seg.useHwy ? "#3b82f6" : "#10b981",
+            color: seg.useHwy ? "#2563eb" : "#059669",
             weight: 5,
-            opacity: 0.85
+            opacity: 0.9
           }).addTo(bMap);
           seg.segCoords.forEach(c => coords.push(c));
         });
-
         bMap.invalidateSize({ animate: false });
         if (coords.length >= 2) {
           bMap.fitBounds(L.latLngBounds(coords), { padding: [25, 25], animate: false });
@@ -2628,7 +3247,7 @@ async function printAllGeneratedCourses() {
           if (lastBounds) map.fitBounds(lastBounds, { padding: [30, 30], animate: false });
         }, 200);
       }, 900);
-    }, 200);
+    }, 250);
   } catch (err) {
     document.body.classList.remove("preparing-batch-print");
     if (btn) {
@@ -2640,7 +3259,7 @@ async function printAllGeneratedCourses() {
 }
 
 // ==========================================
-// 単一コース A4横1枚レポート印刷 / PDF出力
+// 単一コース A4横1枚印刷 / PDF出力
 // ==========================================
 function printA4Report() {
   const courseName = document.getElementById("courseNameInput").value.trim() || "配送ルートシミュレーション結果";
@@ -2648,7 +3267,8 @@ function printA4Report() {
   const vSettings = getVehicleSettings();
 
   document.getElementById("printCourseTitle").textContent = `運行指示書: ${courseName}`;
-  document.getElementById("printMetaInfo").textContent = `運行日付: ${runDate} | 車格: ${vSettings.label} (最大積載${vSettings.maxCap})`;
+  document.getElementById("printMetaInfo").textContent =
+    `運行日付: ${runDate} | 車格: ${vSettings.label} (上限${vSettings.maxCap}) | 稼働上限: ${masterSettings.maxWorkHours}h / 距離上限: ${masterSettings.maxDistKm}km`;
 
   document.body.classList.add("preparing-print");
   setTimeout(() => {
@@ -2670,12 +3290,11 @@ function printA4Report() {
 }
 
 // ==========================================
-// 単一ルート CSV / Excel 読込 & 結果CSV出力
+// 単一ルート CSV / Excel 読込 & 結果 CSV出力
 // ==========================================
 function handleFileUpload(event) {
   const file = event.target.files[0];
   if (!file) return;
-
   const reader = new FileReader();
   reader.onload = function(e) {
     try {
@@ -2683,18 +3302,21 @@ function handleFileUpload(event) {
       const workbook = XLSX.read(data, { type: "array" });
       const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(firstSheet);
-
       if (!rows || rows.length < 2) {
         alert("有効なデータ行が2行以上見つかりませんでした。");
         return;
       }
 
       stops = rows.map((row, i) => ({
-        name: String(row["納品先名称"] || row["名称"] || row["地点名"] || `地点${i + 1}`),
-        address: String(row["住所"] || ""),
+        name: String(row["納品先名称"] || row["名称"] || row["地点名"] || `地点${i + 1}`).trim(),
+        address: String(row["住所"] || "").trim(),
         loadQty: parseFloat(row["荷量"] || row["積載量"] || row["個数"] || "0") || 0,
         stayMin: parseInt(row["滞在時間_分"] || row["滞在時間"] || row["滞在時間(分)"] || "20", 10) || 0,
         targetTime: String(row["指定着時間"] || row["到着指定時間"] || "").trim(),
+        readyTime: String(row["荷物出来上がり時間"] || row["出来上がり時間"] || row["出来上がり"] || "").trim(),
+        courseCode: String(row["コース"] || "").trim(),
+        vehicleClass: String(row["車格"] || "").trim(),
+        note: String(row["納品備考"] || row["備考"] || "").trim(),
         useHighway: isHighwayFlagTrue(row["高速使用"] !== undefined ? row["高速使用"] : row["行き高速"])
       }));
 
@@ -2719,7 +3341,7 @@ function exportResultCSV() {
 }
 
 function escapeHtml(str) {
-  return String(str)
+  return String(str || "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
